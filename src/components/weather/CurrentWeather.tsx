@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Cloud, CloudRain, CloudSnow, CloudSun, Moon, Sun, Wind } from 'lucide-react';
+import { Cloud, CloudRain, CloudSnow, CloudSun, Moon, Sun, Wind, Clock } from 'lucide-react';
 
 interface CurrentWeatherProps {
   location: string;
@@ -8,6 +8,8 @@ interface CurrentWeatherProps {
   feelsLike: number;
   humidity: number;
   windSpeed: number;
+  localTime?: string;
+  timezone?: string;
 }
 
 // Weather icon mapping
@@ -42,15 +44,45 @@ const CurrentWeather = ({
   condition, 
   feelsLike, 
   humidity, 
-  windSpeed 
+  windSpeed,
+  localTime,
+  timezone
 }: CurrentWeatherProps) => {
   const [isNight, setIsNight] = useState(false);
+  const [currentLocalTime, setCurrentLocalTime] = useState(localTime || '');
 
   useEffect(() => {
     // Check if it's night based on local time
     const hours = new Date().getHours();
     setIsNight(hours < 6 || hours >= 19);
-  }, []);
+    
+    // Set initial local time
+    if (localTime) {
+      setCurrentLocalTime(localTime);
+    }
+    
+    // Update local time if timezone is provided
+    let intervalId: number;
+    if (timezone) {
+      intervalId = window.setInterval(() => {
+        try {
+          const time = new Date().toLocaleTimeString('en-US', { 
+            timeZone: timezone,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+          setCurrentLocalTime(time);
+        } catch (error) {
+          console.error('Error updating time:', error);
+        }
+      }, 30000); // Update every 30 seconds
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [localTime, timezone]);
 
   return (
     <div className={`w-full rounded-2xl p-6 overflow-hidden relative transition-all duration-500 ${
@@ -90,6 +122,12 @@ const CurrentWeather = ({
                 <span className="absolute text-2xl top-0 -right-4 group-hover:animate-bounce">°C</span>
               </div>
               <p className="text-white/80">{condition}</p>
+              {currentLocalTime && (
+                <p className="text-white/70 flex items-center mt-1 text-sm">
+                  <Clock size={14} className="inline mr-1" />
+                  <span>{currentLocalTime}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>
