@@ -192,15 +192,23 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen w-full pb-20">
-      <div className={`absolute inset-0 bg-gradient-to-br ${backgroundClass} transition-colors duration-1000 -z-10`}></div>
-      {renderWeatherEffects()}
-      <Header />
-      <div className="container mx-auto mt-1">
-        <WeatherForecastContainer onConditionChange={handleConditionChange} />
+    <>
+      {/* Fixed background that covers the entire screen regardless of content height */}
+      <div className="fixed inset-0 w-full h-full z-[-2]">
+        <div className={`w-full h-full bg-gradient-to-br ${backgroundClass} transition-colors duration-1000`}></div>
       </div>
-      <BottomNav />
-    </div>
+      
+      {/* Weather effects */}
+      {renderWeatherEffects()}
+      
+      <div className="relative min-h-screen">
+        <Header />
+        <div className="container mx-auto mt-1 pb-20">
+          <WeatherForecastContainer onConditionChange={handleConditionChange} />
+        </div>
+        <BottomNav />
+      </div>
+    </>
   );
 };
 
