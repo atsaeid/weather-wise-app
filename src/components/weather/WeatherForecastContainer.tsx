@@ -16,7 +16,6 @@ interface WeatherForecastContainerProps {
 const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContainerProps) => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [selectedLocation, setSelectedLocation] = useState('Tehran');
-  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showLocationDetail, setShowLocationDetail] = useState(false);
   const [selectedDetailLocation, setSelectedDetailLocation] = useState<WeatherData | null>(null);
@@ -29,10 +28,6 @@ const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContaine
         // Get weather data for the selected location
         const data = weatherService.getWeatherData(selectedLocation);
         setWeatherData(data);
-        
-        // Get available locations
-        const locations = weatherService.getAvailableLocations();
-        setAvailableLocations(locations);
         
         // Notify parent about condition change
         if (onConditionChange) {
@@ -55,7 +50,7 @@ const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContaine
     };
   }, [selectedLocation, onConditionChange]);
 
-  // Handle location change from top selector
+  // Handle location change
   const handleLocationChange = (location: string) => {
     setSelectedLocation(location);
     setShowLocationDetail(false);
@@ -101,23 +96,6 @@ const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContaine
 
   return (
     <div className="px-4 pb-24">
-      {/* Location selector */}
-      <div className="mb-4 flex items-center justify-center overflow-x-auto pb-2 hide-scrollbar">
-        {availableLocations.map((location) => (
-          <button
-            key={location}
-            onClick={() => handleLocationChange(location)}
-            className={`px-4 py-2 mx-1 rounded-full transition-all ${
-              selectedLocation === location 
-                ? 'bg-yellow-400 text-blue-900 font-semibold shadow-lg scale-105' 
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            {location}
-          </button>
-        ))}
-      </div>
-
       <div className="space-y-5">
         {/* Current Weather - Full Width */}
         <div className="w-full">

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { weatherService, type WeatherData } from '../../services/weatherService';
-import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Star, Heart } from 'lucide-react';
+import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Star, Heart, LogIn } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface FavoriteLocationsProps {
   onLocationSelect: (location: string) => void;
@@ -10,9 +12,12 @@ interface FavoriteLocationsProps {
 const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocationsProps) => {
   const [favoriteLocations, setFavoriteLocations] = useState<string[]>([]);
   const [favoriteWeatherData, setFavoriteWeatherData] = useState<WeatherData[]>([]);
+  const { isAuthenticated } = useAuth();
 
   // Load favorite locations on mount
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     const loadFavorites = () => {
       const favorites = weatherService.getFavoriteLocations();
       setFavoriteLocations(favorites);
@@ -27,7 +32,7 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
     // Refresh data every 5 minutes
     const intervalId = setInterval(loadFavorites, 5 * 60 * 1000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [isAuthenticated]);
 
   // Toggle favorite status
   const handleToggleFavorite = (location: string, e: React.MouseEvent) => {
@@ -121,6 +126,40 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
   const sortedWeatherData = [...favoriteWeatherData].sort((a, b) => {
     return getRank(b) - getRank(a);
   });
+  
+  // Login prompt for non-authenticated users
+  if (!isAuthenticated) {
+    return (
+      <div className="mt-5 bg-white/5 backdrop-blur-sm p-5 rounded-xl">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-semibold text-white">Favorite Locations</h2>
+          <div className="text-yellow-400">
+            <Star className="w-5 h-5 fill-yellow-400" />
+          </div>
+        </div>
+        
+        <div className="text-center py-10 px-5 bg-white/5 rounded-xl">
+          <LogIn className="w-16 h-16 mx-auto mb-4 text-white/60" />
+          <h3 className="text-xl font-medium mb-3">Login Required</h3>
+          <p className="text-white/70 mb-6">Please log in to view and manage your favorite locations</p>
+          <div className="flex justify-center gap-4">
+            <Link 
+              to="/login" 
+              className="px-5 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+            >
+              Log In
+            </Link>
+            <Link 
+              to="/register" 
+              className="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-lg font-medium transition-colors"
+            >
+              Register
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-5 bg-white/5 backdrop-blur-sm p-5 rounded-xl">
