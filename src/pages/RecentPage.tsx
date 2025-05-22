@@ -93,10 +93,10 @@ const RecentPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-900 to-slate-900">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-900 to-slate-900">
       <Header />
       
-      <main className="container mx-auto px-4 pb-24 pt-6">
+      <main className="flex-grow px-4 pt-6 pb-24">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Clock className="w-7 h-7" />
@@ -107,7 +107,7 @@ const RecentPage = () => {
           {recentWeatherData.length > 0 && (
             <button 
               onClick={handleClearAll}
-              className="flex items-center gap-1 text-sm text-white/80 bg-white/10 hover:bg-white/20 py-2 px-3 rounded-lg transition-colors"
+              className="flex items-center gap-1 text-sm text-white/80 bg-slate-800/80 hover:bg-slate-700/80 py-2 px-3 rounded-lg transition-colors"
             >
               <Trash2 size={16} />
               <span>Clear All</span>
@@ -120,7 +120,7 @@ const RecentPage = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
           </div>
         ) : recentWeatherData.length === 0 ? (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-10 text-center">
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-10 text-center">
             <Clock className="w-16 h-16 mx-auto text-white/40 mb-4" />
             <h2 className="text-xl font-semibold text-white mb-2">No Recent Locations</h2>
             <p className="text-white/70 mb-6">Your recently viewed locations will appear here</p>
@@ -131,7 +131,7 @@ const RecentPage = () => {
               <div 
                 key={weather.location}
                 onClick={() => handleSelectLocation(weather.location)}
-                className={`bg-gradient-to-r ${getTemperatureClass(weather.temperature)} rounded-xl p-5 cursor-pointer transform hover:scale-[1.02] transition-all duration-200 relative overflow-hidden`}
+                className={`bg-gradient-to-r ${getTemperatureClass(weather.temperature)} rounded-xl p-5 cursor-pointer transform hover:scale-[1.02] transition-all duration-200 relative overflow-hidden shadow-lg`}
               >
                 {/* Pattern background */}
                 <div className="absolute inset-0 opacity-10">

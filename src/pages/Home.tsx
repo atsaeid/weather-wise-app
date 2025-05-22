@@ -212,14 +212,16 @@ const Home = () => {
       {/* Weather effects */}
       {renderWeatherEffects()}
       
-      <div className="relative">
+      <div className="min-h-screen flex flex-col">
         <Header />
-        <div className="container mx-auto mt-1">
-          <WeatherForecastContainer 
-            onConditionChange={handleConditionChange} 
-            initialLocation={selectedLocation}
-          />
-        </div>
+        <main className="flex-grow overflow-y-auto">
+          <div className="px-4">
+            <WeatherForecastContainer 
+              onConditionChange={handleConditionChange} 
+              initialLocation={selectedLocation}
+            />
+          </div>
+        </main>
         <BottomNav />
       </div>
     </>

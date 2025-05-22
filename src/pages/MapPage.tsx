@@ -123,14 +123,15 @@ const MapPage = () => {
     <div className="h-screen flex flex-col bg-gradient-to-b from-blue-900 to-slate-900">
       <Header />
       
-      <main className="flex-grow relative">
+      <main className="flex-grow relative overflow-hidden map-page">
         {userLocation && (
-          <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0">
             <MapContainer 
               center={[userLocation.lat, userLocation.lon] as [number, number]} 
               zoom={10} 
               style={{ height: '100%', width: '100%' }}
               className="z-0"
+              zoomControl={false}
             >
               {/* Base map layer */}
               <TileLayer
@@ -142,7 +143,7 @@ const MapPage = () => {
               <TileLayer
                 url={`https://tile.openweathermap.org/map/${activeWeatherLayer}/{z}/{x}/{y}.png?appid=${apiKey}`}
                 attribution='&copy; <a href="https://openweathermap.org">OpenWeatherMap</a>'
-                opacity={0.6}
+                opacity={0.7}
               />
               
               {/* User location marker */}
@@ -180,7 +181,7 @@ const MapPage = () => {
         {/* Map controls */}
         <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
           <button 
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-colors flex items-center justify-center text-white"
+            className="w-10 h-10 rounded-full bg-slate-800/90 backdrop-blur-md hover:bg-slate-700 transition-colors flex items-center justify-center text-white shadow-lg"
             title="Find my location"
             onClick={() => {
               if (userLocation) {
@@ -192,7 +193,7 @@ const MapPage = () => {
             <Compass className="w-5 h-5" />
           </button>
           <button 
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-colors flex items-center justify-center text-white"
+            className="w-10 h-10 rounded-full bg-slate-800/90 backdrop-blur-md hover:bg-slate-700 transition-colors flex items-center justify-center text-white shadow-lg"
             title="Change weather layer"
             onClick={() => setShowLayerSelector(!showLayerSelector)}
           >
@@ -202,15 +203,20 @@ const MapPage = () => {
         
         {/* Weather layer selector */}
         {showLayerSelector && (
-          <div className="absolute top-16 right-4 bg-white/10 backdrop-blur-md rounded-lg p-2 z-20 w-48 animate-fade-in">
+          <div className="absolute top-16 right-4 bg-slate-800/90 backdrop-blur-md rounded-lg p-2 z-20 w-52 shadow-lg border border-slate-700/50 animate-fade-in">
             <h4 className="text-white text-xs uppercase font-medium mb-2 px-2">Weather Layers</h4>
             <div className="space-y-1">
               {weatherLayers.map((layer) => (
                 <button
                   key={layer.value}
                   onClick={() => handleLayerChange(layer.value)}
-                  className={`w-full text-left px-3 py-2 rounded ${activeWeatherLayer === layer.value ? 'bg-blue-600 text-white' : 'text-white hover:bg-white/10'}`}
+                  className={`w-full text-left px-3 py-2 rounded flex items-center ${
+                    activeWeatherLayer === layer.value 
+                      ? 'bg-blue-600 text-white font-medium' 
+                      : 'text-white hover:bg-slate-700/80'
+                  }`}
                 >
+                  <span className="h-3 w-3 rounded-full mr-2 border border-white/20 bg-white/30"></span>
                   {layer.name}
                 </button>
               ))}
@@ -220,7 +226,7 @@ const MapPage = () => {
         
         {/* Selected location details */}
         {selectedLocation && (
-          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 w-11/12 max-w-md bg-white/10 backdrop-blur-md rounded-xl p-4 text-white z-30 animate-fade-in">
+          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 w-11/12 max-w-md bg-slate-800/90 backdrop-blur-md rounded-xl p-4 text-white z-30 animate-fade-in shadow-lg border border-slate-700/50">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-lg font-semibold">{selectedLocation.name}</h3>
@@ -230,7 +236,7 @@ const MapPage = () => {
                 <div className="text-2xl font-bold">{selectedLocation.temperature}°</div>
                 <button 
                   onClick={() => setSelectedLocation(null)}
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+                  className="w-8 h-8 rounded-full bg-slate-700/80 hover:bg-slate-600 flex items-center justify-center"
                 >
                   <X className="w-4 h-4" />
                 </button>

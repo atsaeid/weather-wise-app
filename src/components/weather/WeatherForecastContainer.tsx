@@ -125,7 +125,7 @@ const WeatherForecastContainer = ({ onConditionChange, initialLocation }: Weathe
   }
 
   return (
-    <div className="px-4 pb-24">
+    <div className="pb-16">
       <div className="space-y-5">
         {/* Current Weather - Full Width */}
         <div className="w-full">

@@ -39,8 +39,8 @@ const BottomNav = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-md py-3 shadow-lg rounded-t-2xl">
-      <div className="container mx-auto px-6 flex justify-around items-center text-white">
+    <div className="fixed bottom-0 left-0 right-0 bg-slate-900/60 shadow-lg backdrop-blur-md py-3 shadow-lg rounded-t-2xl z-20">
+      <div className="px-6 flex justify-around items-center text-white">
         <button 
           className={`flex flex-col items-center transition-all duration-300 ${activeTab === 'home' ? 'text-yellow-300 scale-110' : 'text-white'}`}
           onClick={() => handleTabClick('home')}
