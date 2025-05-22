@@ -183,7 +183,10 @@ const WeatherForecastContainer = ({ onConditionChange, initialLocation }: Weathe
               </div>
             ) : (
               <>
-                <MapComponent location={weatherData.mapLocation} />
+                <MapComponent 
+                  location={weatherData.mapLocation} 
+                  onLocationSelect={handleLocationChange}
+                />
                 <FavoriteLocations 
                   key={`favorites-${favoritesUpdateCounter}-${isAuthenticated}`}
                   onLocationSelect={handleFavoriteLocationSelect} 

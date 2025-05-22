@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { weatherService, type WeatherData } from '../../services/weatherService';
-import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Star, Heart, LogIn } from 'lucide-react';
+import { Sun, Cloud, CloudRain, CloudSnow, CloudLightning, Star, Heart, LogIn, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -10,9 +10,10 @@ interface FavoriteLocationsProps {
 }
 
 const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocationsProps) => {
-  const [favoriteLocations, setFavoriteLocations] = useState<string[]>([]);
   const [favoriteWeatherData, setFavoriteWeatherData] = useState<WeatherData[]>([]);
+  const [showAllLocations, setShowAllLocations] = useState(false);
   const { isAuthenticated } = useAuth();
+  const favoritesRef = useRef<HTMLDivElement>(null);
 
   // Load favorite locations on mount
   useEffect(() => {
@@ -20,7 +21,6 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
     
     const loadFavorites = () => {
       const favorites = weatherService.getFavoriteLocations();
-      setFavoriteLocations(favorites);
       
       // Fetch weather data for favorites
       const weatherData = favorites.map(location => weatherService.getWeatherData(location));
@@ -34,22 +34,18 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
     return () => clearInterval(intervalId);
   }, [isAuthenticated]);
 
-  // Toggle favorite status
-  const handleToggleFavorite = (location: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the parent button onClick
-    const isNowFavorite = weatherService.toggleFavorite(location);
+  // Handle location selection with scroll
+  const handleLocationSelect = (location: string) => {
+    onLocationSelect(location);
     
-    if (isNowFavorite) {
-      // Add to favorites
-      setFavoriteLocations(prev => [...prev, location]);
-      setFavoriteWeatherData(prev => [
-        ...prev,
-        weatherService.getWeatherData(location)
-      ]);
-    } else {
-      // Remove from favorites
-      setFavoriteLocations(prev => prev.filter(loc => loc !== location));
-      setFavoriteWeatherData(prev => prev.filter(data => data.location !== location));
+    // Scroll to the top of favorites section
+    if (favoritesRef.current) {
+      setTimeout(() => {
+        favoritesRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start'
+        });
+      }, 100);
     }
   };
 
@@ -126,11 +122,15 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
   const sortedWeatherData = [...favoriteWeatherData].sort((a, b) => {
     return getRank(b) - getRank(a);
   });
+
+  // Split the data for display
+  const initialLocations = sortedWeatherData.slice(0, 10); // First 10 locations always visible
+  const additionalLocations = sortedWeatherData.slice(10); // Locations beyond 10
   
   // Login prompt for non-authenticated users
   if (!isAuthenticated) {
     return (
-      <div className="mt-5 bg-white/5 backdrop-blur-sm p-5 rounded-xl">
+      <div ref={favoritesRef} className="mt-5 bg-white/5 backdrop-blur-sm p-5 rounded-xl w-full">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-semibold text-white">Favorite Locations</h2>
           <div className="text-yellow-400">
@@ -156,8 +156,42 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
     );
   }
 
+  const renderLocationItem = (weather: WeatherData) => {
+    const rank = getRank(weather);
+    const isCurrentLocation = weather.location === currentLocation;
+    
+    return (
+      <button
+        key={weather.location}
+        onClick={() => handleLocationSelect(weather.location)}
+        className={`flex items-center p-4 rounded-xl bg-gradient-to-r ${getBackgroundClass(weather.condition)} 
+          ${isCurrentLocation ? 'ring-2 ring-yellow-400' : ''}
+          hover:scale-[1.02] transition-all duration-200 min-h-[88px] w-full`}
+      >
+        <div className="flex-1 flex flex-col justify-between h-full min-w-0 mr-3">
+          <div className="flex justify-between items-center w-full gap-2">
+            <span className="font-semibold text-lg text-white truncate">{weather.location}</span>
+            <span className="text-sm text-white/80 whitespace-nowrap shrink-0">{weather.localTime}</span>
+          </div>
+          <div className="flex items-center justify-between w-full gap-2 mt-1">
+            <span className="text-sm text-white/80 truncate">{weather.condition}</span>
+            <div className="flex items-center shrink-0">
+              <div className="text-xs text-white/70 bg-white/20 rounded-full px-2 py-0.5">
+                {rank}/10
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 whitespace-nowrap shrink-0">
+          <div>{getWeatherIcon(weather.condition)}</div>
+          <span className="text-2xl font-bold text-white">{weather.temperature}°</span>
+        </div>
+      </button>
+    );
+  };
+
   return (
-    <div className="mt-5 bg-white/5 backdrop-blur-sm p-5 rounded-xl">
+    <div ref={favoritesRef} className="mt-5 bg-white/5 backdrop-blur-sm p-5 rounded-xl w-full">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-semibold text-white">Favorite Locations</h2>
         <div className="text-yellow-400">
@@ -172,41 +206,40 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
           <p className="text-sm mt-2">Add locations to your favorites to see them here</p>
         </div>
       ) : (
-        <div className="flex flex-col space-y-3 max-h-80 overflow-y-auto hide-scrollbar">
-          {sortedWeatherData.map(weather => {
-            const rank = getRank(weather);
-            const isCurrentLocation = weather.location === currentLocation;
-            
-            return (
-              <button
-                key={weather.location}
-                onClick={() => onLocationSelect(weather.location)}
-                className={`flex items-center p-4 rounded-xl bg-gradient-to-r ${getBackgroundClass(weather.condition)} 
-                  ${isCurrentLocation ? 'ring-2 ring-yellow-400' : ''}
-                  hover:scale-[1.02] transition-all duration-200`}
-              >
-                <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-semibold text-lg text-white">{weather.location}</span>
-                    <span className="text-sm text-white/80">{weather.localTime}</span>
+        <>
+          {/* Always visible locations (up to 10) */}
+          <div className="space-y-3 w-full">
+            {initialLocations.map(weather => renderLocationItem(weather))}
+          </div>
+
+          {/* Show more section if there are additional locations */}
+          {additionalLocations.length > 0 && (
+            <>
+              {!showAllLocations ? (
+                <button 
+                  onClick={() => setShowAllLocations(true)}
+                  className="mt-4 w-full py-3 flex items-center justify-center text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all h-[48px]"
+                >
+                  <span className="mr-1">Show {additionalLocations.length} more</span>
+                  <ChevronDown size={16} />
+                </button>
+              ) : (
+                <div className="mt-4 space-y-3 pt-3 border-t border-white/10 w-full">
+                  <div className="max-h-[250px] overflow-y-auto hide-scrollbar pr-1 space-y-3 w-full">
+                    {additionalLocations.map(weather => renderLocationItem(weather))}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-white/80">{weather.condition}</span>
-                    <div className="flex items-center gap-1">
-                      <div className="text-xs text-white/70 bg-white/20 rounded-full px-2 py-0.5">
-                        {rank}/10
-                      </div>
-                    </div>
-                  </div>
+                  <button 
+                    onClick={() => setShowAllLocations(false)}
+                    className="w-full py-3 flex items-center justify-center text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all h-[48px]"
+                  >
+                    <span className="mr-1">Show less</span>
+                    <ChevronDown size={16} className="transform rotate-180" />
+                  </button>
                 </div>
-                <div className="flex items-center gap-3 ml-4">
-                  <div>{getWeatherIcon(weather.condition)}</div>
-                  <span className="text-2xl font-bold text-white">{weather.temperature}°</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+              )}
+            </>
+          )}
+        </>
       )}
     </div>
   );

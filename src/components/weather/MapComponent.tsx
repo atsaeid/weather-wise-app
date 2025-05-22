@@ -1,17 +1,76 @@
-import { useState } from 'react';
-import { MapPin, Layers, Search, Maximize2, Minimize2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { MapPin, Layers, Search, Maximize2, Minimize2, X } from 'lucide-react';
+import { weatherService } from '../../services/weatherService';
 
 interface MapComponentProps {
   location?: { lat: number; lon: number };
-  onLocationSelect?: (location: { lat: number; lon: number }) => void;
+  onLocationSelect?: (location: string) => void;
 }
 
 const MapComponent = ({ location, onLocationSelect }: MapComponentProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [filteredLocations, setFilteredLocations] = useState<string[]>([]);
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Load available locations on mount
+  useEffect(() => {
+    const locations = weatherService.getAvailableLocations();
+    setAvailableLocations(locations);
+  }, []);
+
+  // Handle click outside to close search dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearching(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchValue(value);
+    
+    if (value.trim()) {
+      // Filter locations based on search input
+      const filtered = availableLocations.filter(
+        loc => loc.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredLocations(filtered);
+    } else {
+      setFilteredLocations([]);
+    }
+  };
+
+  const handleSearchFocus = () => {
+    setIsSearching(true);
+  };
+
+  const handleLocationClick = (locationName: string) => {
+    setSearchValue(locationName);
+    setIsSearching(false);
+    
+    if (onLocationSelect) {
+      setIsLoading(true);
+      // Simulate API call delay
+      setTimeout(() => {
+        onLocationSelect(locationName);
+        setIsLoading(false);
+      }, 500);
+    }
   };
 
   // This would be replaced with actual map integration (e.g., Google Maps, Leaflet)
@@ -71,8 +130,8 @@ const MapComponent = ({ location, onLocationSelect }: MapComponentProps) => {
           
           <div className="flex space-x-2">
             <button 
-              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-              onClick={() => setIsLoading(prev => !prev)} // Just for demo
+              className={`w-8 h-8 rounded-full ${isSearching ? 'bg-blue-600' : 'bg-white/10'} flex items-center justify-center hover:bg-white/20 transition-colors`}
+              onClick={() => setIsSearching(!isSearching)}
             >
               <Search size={16} className="text-white/80" />
             </button>
@@ -94,13 +153,55 @@ const MapComponent = ({ location, onLocationSelect }: MapComponentProps) => {
             </button>
           </div>
         </div>
+
+        {/* Search city input */}
+        {isSearching && (
+          <div ref={searchRef} className="mb-3 relative animate-fade-in">
+            <div className="relative">
+              <input
+                type="text"
+                className="w-full bg-white/10 border border-white/30 rounded-lg py-2 pl-10 pr-4 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                placeholder="Search for a city..."
+                value={searchValue}
+                onChange={handleSearchChange}
+                onFocus={handleSearchFocus}
+                autoFocus
+              />
+              <Search className="absolute top-2.5 left-3 h-5 w-5 text-white/50" />
+              {searchValue && (
+                <button 
+                  onClick={() => setSearchValue('')}
+                  className="absolute right-3 top-2.5"
+                >
+                  <X className="h-5 w-5 text-white/50 hover:text-white" />
+                </button>
+              )}
+            </div>
+            
+            {/* Search results dropdown */}
+            {isSearching && filteredLocations.length > 0 && (
+              <div className="absolute left-0 right-0 mt-1 bg-slate-800/90 backdrop-blur-md border border-white/10 rounded-lg shadow-xl z-50 max-h-60 overflow-auto">
+                {filteredLocations.map(loc => (
+                  <button
+                    key={loc}
+                    className="w-full text-left px-4 py-2 hover:bg-white/10 text-white flex items-center"
+                    onClick={() => handleLocationClick(loc)}
+                  >
+                    <MapPin size={14} className="mr-2 text-blue-400" />
+                    {loc}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="flex-1 relative">
           {fakeMap}
         </div>
         
         <div className="mt-3 text-center text-xs text-white/50">
-          Click on the map to see weather details for that location
+          Search for a city to see weather details for that location
         </div>
       </div>
     </div>
