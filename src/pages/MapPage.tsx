@@ -4,6 +4,34 @@ import BottomNav from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
 import { weatherService } from '../services/weatherService';
 import { MapPin, Heart, X, Compass, Layers } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import { config } from '../config';
+
+// Fix for default marker icons in Leaflet with Webpack
+// Create custom icons for markers
+const defaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const favoriteIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: 'favorite-marker'
+});
+
+// Set default icon for all markers
+L.Marker.prototype.options.icon = defaultIcon;
 
 interface MapLocation {
   name: string;
@@ -14,11 +42,43 @@ interface MapLocation {
   isFavorite: boolean;
 }
 
+// Weather map layer options
+interface WeatherMapLayer {
+  name: string;
+  value: string;
+  label: string;
+}
+
+// Custom component to set the map view to user location
+const SetViewOnClick = ({ coords }: { coords: [number, number] | null }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (coords) {
+      map.setView(coords, 10);
+    }
+  }, [coords, map]);
+  return null;
+};
+
 const MapPage = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number; } | null>(null);
   const [favoriteLocations, setFavoriteLocations] = useState<MapLocation[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
+  const [activeWeatherLayer, setActiveWeatherLayer] = useState('temp_new');
+  const [showLayerSelector, setShowLayerSelector] = useState(false);
   const { isAuthenticated } = useAuth();
+  
+  // OpenWeatherMap API key
+  const apiKey = config.openWeatherApiKey;
+  
+  // Weather map layers
+  const weatherLayers: WeatherMapLayer[] = [
+    { name: 'Temperature', value: 'temp_new', label: 'Temperature' },
+    { name: 'Clouds', value: 'clouds_new', label: 'Clouds' },
+    { name: 'Precipitation', value: 'precipitation_new', label: 'Precipitation' },
+    { name: 'Pressure', value: 'pressure_new', label: 'Sea Level Pressure' },
+    { name: 'Wind', value: 'wind_new', label: 'Wind Speed' }
+  ];
 
   useEffect(() => {
     // Get user's current location
@@ -53,85 +113,110 @@ const MapPage = () => {
     }
   }, [isAuthenticated]);
 
+  // Handle changing the weather map layer
+  const handleLayerChange = (layer: string) => {
+    setActiveWeatherLayer(layer);
+    setShowLayerSelector(false);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gradient-to-b from-blue-900 to-slate-900">
       <Header />
       
       <main className="flex-grow relative">
-        {/* Simulated map container */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-800 via-blue-900 to-slate-900 overflow-hidden">
-          {/* Simulated map grid */}
-          <div className="absolute inset-0 grid grid-cols-8 grid-rows-8 opacity-10">
-            {Array.from({ length: 64 }).map((_, i) => (
-              <div key={i} className="border border-white/20"></div>
-            ))}
+        {userLocation && (
+          <div className="absolute inset-0 z-0">
+            <MapContainer 
+              center={[userLocation.lat, userLocation.lon] as [number, number]} 
+              zoom={10} 
+              style={{ height: '100%', width: '100%' }}
+              className="z-0"
+            >
+              {/* Base map layer */}
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              
+              {/* Weather map layer */}
+              <TileLayer
+                url={`https://tile.openweathermap.org/map/${activeWeatherLayer}/{z}/{x}/{y}.png?appid=${apiKey}`}
+                attribution='&copy; <a href="https://openweathermap.org">OpenWeatherMap</a>'
+                opacity={0.6}
+              />
+              
+              {/* User location marker */}
+              <Marker position={[userLocation.lat, userLocation.lon] as [number, number]}>
+                <Popup>
+                  <div className="text-center font-medium">Your Location</div>
+                </Popup>
+              </Marker>
+              
+              {/* Favorite location markers */}
+              {favoriteLocations.map((location, index) => (
+                <Marker 
+                  key={index} 
+                  position={[location.lat, location.lon] as [number, number]}
+                  icon={favoriteIcon}
+                  eventHandlers={{
+                    click: () => setSelectedLocation(location),
+                  }}
+                >
+                  <Popup>
+                    <div className="text-center">
+                      <div className="font-medium">{location.name}</div>
+                      <div>{location.temperature}° | {location.condition}</div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+              
+              {/* Set view to user location */}
+              <SetViewOnClick coords={userLocation ? [userLocation.lat, userLocation.lon] : null} />
+            </MapContainer>
           </div>
-          
-          {/* Simulated water bodies */}
-          <div className="absolute bottom-10 left-5 w-60 h-20 bg-blue-700/20 rounded-full transform -rotate-45"></div>
-          <div className="absolute top-40 right-20 w-80 h-30 bg-blue-700/20 rounded-full transform -rotate-12"></div>
-          <div className="absolute top-1/4 left-1/3 w-40 h-40 bg-blue-700/20 rounded-full"></div>
-          
-          {/* Simulated land masses */}
-          <div className="absolute top-20 left-20 w-40 h-40 bg-white/5 rounded-lg transform rotate-12"></div>
-          <div className="absolute bottom-40 right-20 w-60 h-30 bg-white/5 rounded-lg transform -rotate-6"></div>
-          
-          {/* Simulated roads */}
-          <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/20 transform -rotate-3"></div>
-          <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white/20 transform rotate-3"></div>
-          <div className="absolute top-1/4 left-0 right-0 h-0.5 bg-white/10 transform rotate-1"></div>
-          <div className="absolute top-3/4 left-0 right-0 h-0.5 bg-white/10"></div>
-          
-          {/* User location marker */}
-          {userLocation && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-              <div className="w-6 h-6 rounded-full bg-blue-500 border-2 border-white animate-pulse flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              </div>
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 whitespace-nowrap bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded text-white text-xs">
-                Your Location
-              </div>
-            </div>
-          )}
-          
-          {/* Favorite location markers */}
-          {favoriteLocations.map((location, index) => {
-            const randomTop = 10 + Math.random() * 80;
-            const randomLeft = 10 + Math.random() * 80;
-            return (
-              <div 
-                key={index} 
-                className="absolute z-10" 
-                style={{ top: `${randomTop}%`, left: `${randomLeft}%` }}
-                onClick={() => setSelectedLocation(location)}
-              >
-                <div className="flex flex-col items-center cursor-pointer group">
-                  <MapPin className="w-6 h-6 text-red-500 group-hover:scale-110 transition-transform" />
-                  <Heart className="w-4 h-4 -mt-1 fill-red-500 text-red-500" />
-                  <div className="mt-1 whitespace-nowrap bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded text-white text-xs">
-                    {location.name} | {location.temperature}°
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        )}
         
         {/* Map controls */}
         <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
           <button 
             className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-colors flex items-center justify-center text-white"
             title="Find my location"
+            onClick={() => {
+              if (userLocation) {
+                // This will re-center the map to user's location
+                setUserLocation({...userLocation});
+              }
+            }}
           >
             <Compass className="w-5 h-5" />
           </button>
           <button 
             className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-colors flex items-center justify-center text-white"
-            title="Change map style"
+            title="Change weather layer"
+            onClick={() => setShowLayerSelector(!showLayerSelector)}
           >
             <Layers className="w-5 h-5" />
           </button>
         </div>
+        
+        {/* Weather layer selector */}
+        {showLayerSelector && (
+          <div className="absolute top-16 right-4 bg-white/10 backdrop-blur-md rounded-lg p-2 z-20 w-48 animate-fade-in">
+            <h4 className="text-white text-xs uppercase font-medium mb-2 px-2">Weather Layers</h4>
+            <div className="space-y-1">
+              {weatherLayers.map((layer) => (
+                <button
+                  key={layer.value}
+                  onClick={() => handleLayerChange(layer.value)}
+                  className={`w-full text-left px-3 py-2 rounded ${activeWeatherLayer === layer.value ? 'bg-blue-600 text-white' : 'text-white hover:bg-white/10'}`}
+                >
+                  {layer.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Selected location details */}
         {selectedLocation && (
