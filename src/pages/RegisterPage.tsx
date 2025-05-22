@@ -4,20 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import type { RegisterCredentials } from '../services/authService';
 
-// Array of beautiful gradients with patterns for random backgrounds
-const backgroundStyles = [
-  'bg-gradient-to-br from-blue-600 to-purple-700 bg-pattern-dots',
-  'bg-gradient-to-r from-sky-400 to-indigo-900 bg-pattern-waves',
-  'bg-gradient-to-br from-cyan-500 to-blue-800 bg-pattern-weather',
-  'bg-gradient-to-br from-indigo-700 via-purple-700 to-pink-700 bg-pattern-dots',
-  'bg-gradient-to-br from-blue-700 via-cyan-600 to-emerald-600 bg-pattern-waves',
-  'bg-gradient-to-br from-fuchsia-600 via-violet-700 to-indigo-800 bg-pattern-weather',
-];
-
-// Weather-themed background SVGs
-const bgPatterns = [
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M29.5 10.5c0-5 2-10 8-10s8 5 8 10c0 6-5 10-8 10s-8-4-8-10zm8 20.5c-5 0-10 2-10 8s5 8 10 8 10-2 10-8-5-8-10-8zm-20 20c6 0 10-5 10-8s-4-8-10-8-10 5-10 8 4 8 10 8zM20.5 20.5c0-6 5-10 8-10s8 4 8 10c0 5-2 10-8 10s-8-5-8-10z' fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E\")",
-  "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E\")"
+// Background configurations - beautiful gradients
+const gradients = [
+  'linear-gradient(135deg, #4c1d95 0%, #8b5cf6 100%)',
+  'linear-gradient(90deg, #0369a1 0%, #0ea5e9 100%)',
+  'linear-gradient(135deg, #155e75 0%, #06b6d4 100%)',
+  'linear-gradient(135deg, #4338ca 0%, #a855f7 50%, #ec4899 100%)',
+  'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 50%, #10b981 100%)',
+  'linear-gradient(135deg, #c026d3 0%, #7c3aed 50%, #3730a3 100%)',
 ];
 
 const RegisterPage = () => {
@@ -35,12 +29,12 @@ const RegisterPage = () => {
   useEffect(() => {
     // Redirect if already logged in
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/', { replace: true });
     }
     
-    // Set a random gradient background on component mount
-    const randomIndex = Math.floor(Math.random() * backgroundStyles.length);
-    setBackgroundStyle(backgroundStyles[randomIndex]);
+    // Set random gradient background on component mount
+    const randomIndex = Math.floor(Math.random() * gradients.length);
+    setBackgroundStyle(gradients[randomIndex]);
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +52,7 @@ const RegisterPage = () => {
     try {
       const credentials: RegisterCredentials = { username, email, password };
       await register(credentials);
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
@@ -67,7 +61,10 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col ${backgroundStyle}`}>
+    <div 
+      className="min-h-screen flex flex-col"
+      style={{ backgroundImage: backgroundStyle }}
+    >
       {/* Header with back button */}
       <div className="p-4">
         <Link to="/" className="inline-flex items-center text-white hover:text-yellow-300 transition-colors">

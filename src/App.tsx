@@ -8,7 +8,7 @@ import RegisterPage from './pages/RegisterPage'
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Protected route component
+  // Protected route component - for routes that require authentication
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (isLoading) {
       return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-blue-900">
@@ -17,7 +17,7 @@ function App() {
     }
     
     if (!isAuthenticated) {
-      return <Navigate to="/login" />;
+      return <Navigate to="/login" replace />;
     }
 
     return children;
@@ -28,6 +28,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        {/* Home page is accessible to everyone */}
         <Route path="/" element={<Home />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
