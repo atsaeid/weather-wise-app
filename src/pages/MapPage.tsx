@@ -3,11 +3,12 @@ import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
 import { weatherService } from '../services/weatherService';
-import { MapPin, Heart, X, Compass, Layers } from 'lucide-react';
+import { MapPin, Heart, X, Compass, Layers, LogIn } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { config } from '../config';
+import { Link } from 'react-router-dom';
 
 // Fix for default marker icons in Leaflet with Webpack
 // Create custom icons for markers
@@ -82,6 +83,34 @@ const FocusLocation = ({
   return null;
 };
 
+// Component to focus on user location
+const FocusUserLocation = ({
+  position,
+  shouldFocus,
+  onFocusComplete
+}: {
+  position: [number, number] | null,
+  shouldFocus: boolean,
+  onFocusComplete: () => void
+}) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (position && shouldFocus) {
+      // Close any open popups first
+      map.closePopup();
+      
+      // Set a small timeout to ensure popup closing has completed
+      setTimeout(() => {
+        map.setView(position, 10);
+        onFocusComplete();
+      }, 50);
+    }
+  }, [position, shouldFocus, map, onFocusComplete]);
+  
+  return null;
+};
+
 const MapPage = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number; } | null>(null);
   const [favoriteLocations, setFavoriteLocations] = useState<MapLocation[]>([]);
@@ -89,8 +118,10 @@ const MapPage = () => {
   const [activeWeatherLayer, setActiveWeatherLayer] = useState('temp_new');
   const [showLayerSelector, setShowLayerSelector] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [focusUserLocation, setFocusUserLocation] = useState(false);
   const { isAuthenticated } = useAuth();
   const mapInitialized = useRef(false);
+  const mapRef = useRef<L.Map | null>(null);
   
   // OpenWeatherMap API key
   const apiKey = config.openWeatherApiKey;
@@ -141,6 +172,14 @@ const MapPage = () => {
     getUserLocation();
   }, []);
   
+  // Clear selected location if user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSelectedLocation(null);
+      setFavoriteLocations([]);
+    }
+  }, [isAuthenticated]);
+  
   // Get favorite locations if user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -159,7 +198,11 @@ const MapPage = () => {
         setFavoriteLocations(favLocations);
       } catch (error) {
         console.error('Error loading favorite locations:', error);
+        setFavoriteLocations([]);
       }
+    } else {
+      // Clear favorite locations when not authenticated
+      setFavoriteLocations([]);
     }
   }, [isAuthenticated]);
 
@@ -171,10 +214,23 @@ const MapPage = () => {
 
   // Handle user clicking "Find my location" button
   const handleGoToUserLocation = () => {
-    // Don't need to recreate the userLocation object, just center the map
     if (userLocation) {
-      setSelectedLocation(null); // Clear any selected location
+      // Clear any selected location
+      setSelectedLocation(null);
+      
+      if (mapRef.current) {
+        // Close any open popups
+        mapRef.current.closePopup();
+      }
+      
+      // Trigger a map focus on the user location
+      setFocusUserLocation(true);
     }
+  };
+  
+  // Called after map has focused on user location
+  const handleUserLocationFocusComplete = () => {
+    setFocusUserLocation(false);
   };
   
   // Handle selecting a location
@@ -200,6 +256,11 @@ const MapPage = () => {
                   mapInitialized.current = true;
                 }
               }}
+              ref={(map) => {
+                if (map) {
+                  mapRef.current = map;
+                }
+              }}
             >
               {/* Base map layer */}
               <TileLayer
@@ -216,22 +277,24 @@ const MapPage = () => {
               
               {/* User location marker */}
               <Marker position={[userLocation.lat, userLocation.lon] as [number, number]}>
-                <Popup>
+                <Popup closeButton={true} autoClose={false}>
                   <div className="text-center font-medium">Your Location</div>
                 </Popup>
               </Marker>
               
-              {/* Favorite location markers */}
-              {favoriteLocations.map((location, index) => (
+              {/* Favorite location markers - only show when authenticated */}
+              {isAuthenticated && favoriteLocations.map((location, index) => (
                 <Marker 
                   key={index} 
                   position={[location.lat, location.lon] as [number, number]}
                   icon={favoriteIcon}
                   eventHandlers={{
-                    click: () => handleSelectLocation(location),
+                    click: () => {
+                      handleSelectLocation(location);
+                    },
                   }}
                 >
-                  <Popup>
+                  <Popup closeButton={true} autoClose={true}>
                     <div className="text-center">
                       <div className="font-medium">{location.name}</div>
                       <div>{location.temperature}° | {location.condition}</div>
@@ -250,6 +313,13 @@ const MapPage = () => {
                   isActive={true} 
                 />
               )}
+              
+              {/* Focus controller for user location */}
+              <FocusUserLocation
+                position={userLocation ? [userLocation.lat, userLocation.lon] : null}
+                shouldFocus={focusUserLocation}
+                onFocusComplete={handleUserLocationFocusComplete}
+              />
             </MapContainer>
           </div>
         )}
@@ -295,9 +365,29 @@ const MapPage = () => {
           </div>
         )}
         
+        {/* Login prompt for non-authenticated users */}
+        {!isAuthenticated && (
+          <div className="absolute bottom-20 left-0 right-0 mx-auto w-11/12 max-w-md bg-slate-800/90 backdrop-blur-md rounded-xl p-4 text-white z-30 animate-fade-in shadow-lg border border-slate-700/50">
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-3">
+                <Heart className="w-6 h-6 mr-2 text-slate-400" />
+                <h3 className="text-lg font-semibold">Favorite Locations</h3>
+              </div>
+              <p className="text-sm text-white/80 mb-4">Sign in to see your favorite locations on the map</p>
+              <Link 
+                to="/login"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white font-medium"
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign In
+              </Link>
+            </div>
+          </div>
+        )}
+        
         {/* Selected location details */}
         {selectedLocation && (
-          <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 w-11/12 max-w-md bg-slate-800/90 backdrop-blur-md rounded-xl p-4 text-white z-30 animate-fade-in shadow-lg border border-slate-700/50">
+          <div className="absolute bottom-20 left-0 right-0 mx-auto w-11/12 max-w-md bg-slate-800/90 backdrop-blur-md rounded-xl p-4 text-white z-30 animate-fade-in shadow-lg border border-slate-700/50">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-lg font-semibold">{selectedLocation.name}</h3>
