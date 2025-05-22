@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
@@ -49,14 +49,36 @@ interface WeatherMapLayer {
   label: string;
 }
 
-// Custom component to set the map view to user location
-const SetViewOnClick = ({ coords }: { coords: [number, number] | null }) => {
+// Custom component for map controls that don't cause re-renders
+const MapController = ({ userPosition }: { userPosition: [number, number] | null }) => {
   const map = useMap();
+  
+  // Set initial view only once when the map loads
   useEffect(() => {
-    if (coords) {
-      map.setView(coords, 10);
+    if (userPosition) {
+      map.setView(userPosition, 10);
     }
-  }, [coords, map]);
+  }, []); // Empty dependency array - only run once on mount
+  
+  return null;
+};
+
+// Component to focus on selected location
+const FocusLocation = ({ 
+  position, 
+  isActive 
+}: { 
+  position: [number, number] | null,
+  isActive: boolean
+}) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (position && isActive) {
+      map.setView(position, 12);
+    }
+  }, [position, isActive, map]);
+  
   return null;
 };
 
@@ -66,7 +88,9 @@ const MapPage = () => {
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   const [activeWeatherLayer, setActiveWeatherLayer] = useState('temp_new');
   const [showLayerSelector, setShowLayerSelector] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const { isAuthenticated } = useAuth();
+  const mapInitialized = useRef(false);
   
   // OpenWeatherMap API key
   const apiKey = config.openWeatherApiKey;
@@ -80,36 +104,62 @@ const MapPage = () => {
     { name: 'Wind', value: 'wind_new', label: 'Wind Speed' }
   ];
 
+  // Get user's location with more reliable fallbacks
   useEffect(() => {
-    // Get user's current location
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude
-        });
-      },
-      (error) => {
-        console.error('Error getting location:', error);
-        // If can't get user location, default to Tehran
-        setUserLocation({ lat: 35.6892, lon: 51.3890 });
+    const getUserLocation = () => {
+      // Only request location if we haven't set it yet
+      if (!userLocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const newLocation = {
+              lat: position.coords.latitude,
+              lon: position.coords.longitude
+            };
+            console.log("Successfully got user location:", newLocation);
+            setUserLocation(newLocation);
+            setMapReady(true);
+          },
+          (error) => {
+            console.error('Error getting location:', error);
+            // If can't get user location, default to Tehran
+            const defaultLocation = { lat: 35.6892, lon: 51.3890 };
+            console.log("Using default location:", defaultLocation);
+            setUserLocation(defaultLocation);
+            setMapReady(true);
+          },
+          { 
+            enableHighAccuracy: true, 
+            timeout: 10000, 
+            maximumAge: 0 
+          }
+        );
+      } else {
+        setMapReady(true);
       }
-    );
+    };
     
-    // Get favorite locations if user is authenticated
+    getUserLocation();
+  }, []);
+  
+  // Get favorite locations if user is authenticated
+  useEffect(() => {
     if (isAuthenticated) {
-      const favLocations = weatherService.getFavoriteLocations().map(loc => {
-        const data = weatherService.getWeatherData(loc);
-        return {
-          name: data.location,
-          lat: data.mapLocation.lat,
-          lon: data.mapLocation.lon,
-          temperature: data.temperature,
-          condition: data.condition,
-          isFavorite: true
-        };
-      });
-      setFavoriteLocations(favLocations);
+      try {
+        const favLocations = weatherService.getFavoriteLocations().map(loc => {
+          const data = weatherService.getWeatherData(loc);
+          return {
+            name: data.location,
+            lat: data.mapLocation.lat,
+            lon: data.mapLocation.lon,
+            temperature: data.temperature,
+            condition: data.condition,
+            isFavorite: true
+          };
+        });
+        setFavoriteLocations(favLocations);
+      } catch (error) {
+        console.error('Error loading favorite locations:', error);
+      }
     }
   }, [isAuthenticated]);
 
@@ -119,12 +169,25 @@ const MapPage = () => {
     setShowLayerSelector(false);
   };
 
+  // Handle user clicking "Find my location" button
+  const handleGoToUserLocation = () => {
+    // Don't need to recreate the userLocation object, just center the map
+    if (userLocation) {
+      setSelectedLocation(null); // Clear any selected location
+    }
+  };
+  
+  // Handle selecting a location
+  const handleSelectLocation = (location: MapLocation) => {
+    setSelectedLocation(location);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gradient-to-b from-blue-900 to-slate-900">
       <Header />
       
       <main className="flex-grow relative overflow-hidden map-page">
-        {userLocation && (
+        {mapReady && userLocation && (
           <div className="absolute inset-0">
             <MapContainer 
               center={[userLocation.lat, userLocation.lon] as [number, number]} 
@@ -132,6 +195,11 @@ const MapPage = () => {
               style={{ height: '100%', width: '100%' }}
               className="z-0"
               zoomControl={false}
+              whenReady={() => {
+                if (!mapInitialized.current) {
+                  mapInitialized.current = true;
+                }
+              }}
             >
               {/* Base map layer */}
               <TileLayer
@@ -160,7 +228,7 @@ const MapPage = () => {
                   position={[location.lat, location.lon] as [number, number]}
                   icon={favoriteIcon}
                   eventHandlers={{
-                    click: () => setSelectedLocation(location),
+                    click: () => handleSelectLocation(location),
                   }}
                 >
                   <Popup>
@@ -172,8 +240,16 @@ const MapPage = () => {
                 </Marker>
               ))}
               
-              {/* Set view to user location */}
-              <SetViewOnClick coords={userLocation ? [userLocation.lat, userLocation.lon] : null} />
+              {/* Initial map controller */}
+              <MapController userPosition={userLocation ? [userLocation.lat, userLocation.lon] : null} />
+              
+              {/* Focus controller for selected location */}
+              {selectedLocation && (
+                <FocusLocation 
+                  position={[selectedLocation.lat, selectedLocation.lon] as [number, number]} 
+                  isActive={true} 
+                />
+              )}
             </MapContainer>
           </div>
         )}
@@ -183,12 +259,7 @@ const MapPage = () => {
           <button 
             className="w-10 h-10 rounded-full bg-slate-800/90 backdrop-blur-md hover:bg-slate-700 transition-colors flex items-center justify-center text-white shadow-lg"
             title="Find my location"
-            onClick={() => {
-              if (userLocation) {
-                // This will re-center the map to user's location
-                setUserLocation({...userLocation});
-              }
-            }}
+            onClick={handleGoToUserLocation}
           >
             <Compass className="w-5 h-5" />
           </button>
@@ -242,6 +313,13 @@ const MapPage = () => {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+        
+        {/* Loading indicator */}
+        {!mapReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
           </div>
         )}
       </main>
