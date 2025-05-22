@@ -4,6 +4,8 @@ import AirConditions from './AirConditions';
 import TodaysForecast from './TodaysForecast';
 import WeeklyForecast from './WeeklyForecast';
 import MapComponent from './MapComponent';
+import FavoriteLocations from './FavoriteLocations';
+import LocationDetail from './LocationDetail';
 import { weatherService, type WeatherData } from '../../services/weatherService';
 
 // Props interface
@@ -16,6 +18,8 @@ const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContaine
   const [selectedLocation, setSelectedLocation] = useState('Tehran');
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showLocationDetail, setShowLocationDetail] = useState(false);
+  const [selectedDetailLocation, setSelectedDetailLocation] = useState<WeatherData | null>(null);
 
   // Fetch weather data on mount and when location changes
   useEffect(() => {
@@ -51,9 +55,32 @@ const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContaine
     };
   }, [selectedLocation, onConditionChange]);
 
-  // Handle location change
+  // Handle location change from top selector
   const handleLocationChange = (location: string) => {
     setSelectedLocation(location);
+    setShowLocationDetail(false);
+  };
+  
+  // Handle location selection from favorites
+  const handleFavoriteLocationSelect = (location: string) => {
+    // If it's the same as current location, just update main view
+    if (location === selectedLocation) {
+      setShowLocationDetail(false);
+      return;
+    }
+    
+    // Get weather data for selected favorite location
+    const locationData = weatherService.getWeatherData(location);
+    setSelectedDetailLocation(locationData);
+    setShowLocationDetail(true);
+  };
+  
+  // Close detail view and switch to that location
+  const handleSwitchToLocation = () => {
+    if (selectedDetailLocation) {
+      setSelectedLocation(selectedDetailLocation.location);
+      setShowLocationDetail(false);
+    }
   };
   
   if (isLoading && !weatherData) {
@@ -126,9 +153,35 @@ const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContaine
             <WeeklyForecast dailyForecasts={weatherData.dailyForecasts} />
           </div>
 
-          {/* Right column - Map (desktop only) */}
-          <div className="lg:w-2/5 order-1 lg:order-2">
-            <MapComponent location={weatherData.mapLocation} />
+          {/* Right column - Map and Favorites */}
+          <div className="lg:w-2/5 order-1 lg:order-2 space-y-5">
+            {showLocationDetail && selectedDetailLocation ? (
+              <div className="relative">
+                <LocationDetail weatherData={selectedDetailLocation} />
+                <div className="flex justify-between mt-4">
+                  <button
+                    onClick={() => setShowLocationDetail(false)}
+                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    Back to Favorites
+                  </button>
+                  <button
+                    onClick={handleSwitchToLocation}
+                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors"
+                  >
+                    View Full Details
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <MapComponent location={weatherData.mapLocation} />
+                <FavoriteLocations 
+                  onLocationSelect={handleFavoriteLocationSelect} 
+                  currentLocation={selectedLocation} 
+                />
+              </>
+            )}
           </div>
         </div>
       </div>

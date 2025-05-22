@@ -13,6 +13,7 @@ export interface WeatherData {
   hourlyForecasts: HourlyForecast[];
   dailyForecasts: DailyForecast[];
   mapLocation: { lat: number; lon: number };
+  isFavorite?: boolean;
 }
 
 export interface HourlyForecast {
@@ -38,37 +39,84 @@ const locationData = [
     timezone: 'Asia/Tehran', 
     lat: 35.6892,
     lon: 51.3890,
-    baseTemp: 28
+    baseTemp: 28,
+    isFavorite: true
   },
   { 
     name: 'New York',
     timezone: 'America/New_York', 
     lat: 40.7128,
     lon: -74.0060,
-    baseTemp: 22
+    baseTemp: 22,
+    isFavorite: true
   },
   { 
     name: 'London',
     timezone: 'Europe/London', 
     lat: 51.5074,
     lon: -0.1278,
-    baseTemp: 18
+    baseTemp: 18,
+    isFavorite: true
   },
   { 
     name: 'Tokyo',
     timezone: 'Asia/Tokyo', 
     lat: 35.6762,
     lon: 139.6503,
-    baseTemp: 25
+    baseTemp: 25,
+    isFavorite: true
   },
   { 
     name: 'Sydney',
     timezone: 'Australia/Sydney', 
     lat: -33.8688,
     lon: 151.2093,
-    baseTemp: 23
+    baseTemp: 23,
+    isFavorite: true
+  },
+  { 
+    name: 'Dubai',
+    timezone: 'Asia/Dubai', 
+    lat: 25.2048,
+    lon: 55.2708,
+    baseTemp: 33,
+    isFavorite: true
+  },
+  { 
+    name: 'Paris',
+    timezone: 'Europe/Paris', 
+    lat: 48.8566,
+    lon: 2.3522,
+    baseTemp: 20,
+    isFavorite: true
+  },
+  { 
+    name: 'Moscow',
+    timezone: 'Europe/Moscow', 
+    lat: 55.7558,
+    lon: 37.6173,
+    baseTemp: 15,
+    isFavorite: true
   },
 ];
+
+// Local storage key for favorites
+const FAVORITE_LOCATIONS_KEY = 'weather_wise_favorite_locations';
+
+// Function to get favorite locations from local storage
+const getFavoriteLocations = (): string[] => {
+  const storedFavorites = localStorage.getItem(FAVORITE_LOCATIONS_KEY);
+  if (storedFavorites) {
+    return JSON.parse(storedFavorites);
+  }
+  // Default favorites if none are stored
+  return locationData.filter(loc => loc.isFavorite).map(loc => loc.name);
+};
+
+// Function to save favorite locations to local storage
+const saveFavoriteLocations = (favorites: string[]): void => {
+  localStorage.setItem(FAVORITE_LOCATIONS_KEY, JSON.stringify(favorites));
+};
 
 // Functions to get localized time for each location
 const getLocalTime = (timezone: string): string => {
@@ -110,6 +158,7 @@ const generateWeatherData = (locationName: string): WeatherData => {
   const condition = getWeatherCondition(locationName);
   const timezone = location.timezone;
   const localTime = getLocalTime(timezone);
+  const favorites = getFavoriteLocations();
   
   // Generate mock hourly forecast
   const hourlyForecasts: HourlyForecast[] = [];
@@ -164,6 +213,7 @@ const generateWeatherData = (locationName: string): WeatherData => {
     hourlyForecasts,
     dailyForecasts,
     mapLocation: { lat: location.lat, lon: location.lon },
+    isFavorite: favorites.includes(locationName)
   };
 };
 
@@ -172,9 +222,46 @@ export const weatherService = {
   getWeatherData: (locationName: string = 'Tehran'): WeatherData => {
     return generateWeatherData(locationName);
   },
+  
   getAvailableLocations: (): string[] => {
     return locationData.map(loc => loc.name);
   },
+  
+  getFavoriteLocations: (): string[] => {
+    return getFavoriteLocations();
+  },
+  
+  addToFavorites: (locationName: string): void => {
+    const favorites = getFavoriteLocations();
+    if (!favorites.includes(locationName)) {
+      favorites.push(locationName);
+      saveFavoriteLocations(favorites);
+    }
+  },
+  
+  removeFromFavorites: (locationName: string): void => {
+    const favorites = getFavoriteLocations();
+    const updatedFavorites = favorites.filter(loc => loc !== locationName);
+    saveFavoriteLocations(updatedFavorites);
+  },
+  
+  toggleFavorite: (locationName: string): boolean => {
+    const favorites = getFavoriteLocations();
+    const isFavorite = favorites.includes(locationName);
+    
+    if (isFavorite) {
+      // Remove from favorites
+      const updatedFavorites = favorites.filter(loc => loc !== locationName);
+      saveFavoriteLocations(updatedFavorites);
+      return false;
+    } else {
+      // Add to favorites
+      favorites.push(locationName);
+      saveFavoriteLocations(favorites);
+      return true;
+    }
+  },
+  
   getLocalTime: (timezone: string): string => {
     return getLocalTime(timezone);
   }
