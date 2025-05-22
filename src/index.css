@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base HTML and body styles */
+html, body {
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  background-color: #0c1d37;
+  color: white;
+}
+
+/* Page-specific background styles */
+body.auth-page {
+  background-color: transparent;
+  background-image: linear-gradient(135deg, #4c1d95 0%, #8b5cf6 100%);
+}
+
+/* Remove constraints for #root on auth pages */
+body.auth-page #root {
+  padding: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
 @layer utilities {
   /* Custom animations */
   .animate-float {
@@ -70,6 +96,26 @@
   }
 }
 
+/* Weather Effect Styles */
+.rain-drop {
+  position: absolute;
+  width: 2px;
+  height: 20px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.6));
+  border-radius: 10px;
+  animation: rain-fall linear infinite;
+}
+
+.snow-flake {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: snow-fall linear infinite;
+}
+
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
@@ -131,5 +177,32 @@
   }
   100% {
     transform: translateY(0px) translateX(0px);
+  }
+}
+
+@keyframes rain-fall {
+  0% {
+    transform: translateY(-100px);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+@keyframes snow-fall {
+  0% {
+    transform: translateY(-10px) translateX(0);
+  }
+  25% {
+    transform: translateY(25vh) translateX(10px);
+  }
+  50% {
+    transform: translateY(50vh) translateX(-10px);
+  }
+  75% {
+    transform: translateY(75vh) translateX(5px);
+  }
+  100% {
+    transform: translateY(100vh) translateX(0);
   }
 }

@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CurrentWeather from './CurrentWeather';
 import AirConditions from './AirConditions';
 import TodaysForecast from './TodaysForecast';
 import WeeklyForecast from './WeeklyForecast';
 import MapComponent from './MapComponent';
+
+// Props interface
+interface WeatherForecastContainerProps {
+  onConditionChange?: (condition: string) => void;
+}
 
 // Mock data for example display
 const mockWeatherData = {
@@ -41,11 +46,18 @@ const mockWeatherData = {
   mapLocation: { lat: 35.6892, lon: 51.3890 }
 };
 
-const WeatherForecastContainer = () => {
+const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContainerProps) => {
   const [weatherData, setWeatherData] = useState(mockWeatherData);
 
+  // Notify parent component when condition changes
+  useEffect(() => {
+    if (onConditionChange) {
+      onConditionChange(weatherData.condition);
+    }
+  }, [weatherData.condition, onConditionChange]);
+
   return (
-    <div className="container mx-auto px-4 pb-24">
+    <div className="px-4 pb-24">
       <div className="space-y-5">
         {/* Current Weather - Full Width */}
         <div className="w-full">

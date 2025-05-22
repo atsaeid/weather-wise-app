@@ -25,6 +25,9 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Add auth-page class to body
+    document.body.classList.add('auth-page');
+    
     // Redirect if already logged in
     if (isAuthenticated) {
       navigate('/', { replace: true });
@@ -33,6 +36,11 @@ const LoginPage = () => {
     // Set random gradient background on component mount
     const randomIndex = Math.floor(Math.random() * gradients.length);
     setBackgroundStyle(gradients[randomIndex]);
+    
+    // Remove auth-page class when component unmounts
+    return () => {
+      document.body.classList.remove('auth-page');
+    };
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
