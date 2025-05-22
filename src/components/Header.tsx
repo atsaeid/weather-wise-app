@@ -20,7 +20,7 @@ const Header = () => {
 
   return (
     <header className="text-white py-3 sticky top-0 z-10 bg-slate-900/60 shadow-lg backdrop-blur-md w-full">
-      <div className="px-4 flex justify-between items-center">
+      <div className="px-6 md:px-8 flex justify-between items-center">
         {/* Logo and App Title */}
         <div className="flex items-center gap-2">
           <CloudSun size={28} className="text-yellow-300" />

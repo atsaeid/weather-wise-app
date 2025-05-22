@@ -215,7 +215,7 @@ const Home = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-grow overflow-y-auto">
-          <div className="px-4">
+          <div className="px-6 md:px-8 mx-auto max-w-7xl w-full">
             <WeatherForecastContainer 
               onConditionChange={handleConditionChange} 
               initialLocation={selectedLocation}

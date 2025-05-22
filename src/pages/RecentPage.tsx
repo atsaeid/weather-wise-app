@@ -96,7 +96,7 @@ const RecentPage = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-900 to-slate-900">
       <Header />
       
-      <main className="flex-grow px-4 pt-6 pb-24">
+      <main className="flex-grow px-6 md:px-8 pt-6 pb-24 mx-auto max-w-7xl w-full">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Clock className="w-7 h-7" />
