@@ -116,6 +116,8 @@ const getFavoriteLocations = (): string[] => {
 // Function to save favorite locations to local storage
 const saveFavoriteLocations = (favorites: string[]): void => {
   localStorage.setItem(FAVORITE_LOCATIONS_KEY, JSON.stringify(favorites));
+  // Dispatch a custom event to notify components that favorites have changed
+  window.dispatchEvent(new CustomEvent('favorites-updated'));
 };
 
 // Functions to get localized time for each location

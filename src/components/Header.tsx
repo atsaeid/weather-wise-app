@@ -50,19 +50,13 @@ const Header = () => {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
               <Link 
                 to="/login" 
-                className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-sm"
+                className="flex items-center gap-2 py-2 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all text-sm font-medium shadow-md hover:shadow-lg"
               >
                 <User size={16} />
-                <span>Login</span>
-              </Link>
-              <Link 
-                to="/register" 
-                className="hidden sm:flex items-center gap-2 py-1.5 px-3 rounded-full bg-yellow-400/80 hover:bg-yellow-400 text-blue-900 transition-colors text-sm font-medium"
-              >
-                <span>Register</span>
+                <span>Sign In</span>
               </Link>
             </div>
           )}

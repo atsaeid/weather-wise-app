@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import CurrentWeather from './CurrentWeather';
 import AirConditions from './AirConditions';
 import TodaysForecast from './TodaysForecast';
@@ -7,6 +7,7 @@ import MapComponent from './MapComponent';
 import FavoriteLocations from './FavoriteLocations';
 import LocationDetail from './LocationDetail';
 import { weatherService, type WeatherData } from '../../services/weatherService';
+import { useAuth } from '../../context/AuthContext';
 
 // Props interface
 interface WeatherForecastContainerProps {
@@ -19,6 +20,23 @@ const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContaine
   const [isLoading, setIsLoading] = useState(true);
   const [showLocationDetail, setShowLocationDetail] = useState(false);
   const [selectedDetailLocation, setSelectedDetailLocation] = useState<WeatherData | null>(null);
+  const { isAuthenticated } = useAuth();
+  const [favoritesUpdateCounter, setFavoritesUpdateCounter] = useState(0);
+
+  // Force refresh when favorites change
+  const refreshFavorites = useCallback(() => {
+    setFavoritesUpdateCounter(prev => prev + 1);
+  }, []);
+
+  // Attach a global event listener for favorites changes
+  useEffect(() => {
+    // Create a custom event for favorites updates
+    window.addEventListener('favorites-updated', refreshFavorites);
+    
+    return () => {
+      window.removeEventListener('favorites-updated', refreshFavorites);
+    };
+  }, [refreshFavorites]);
 
   // Fetch weather data on mount and when location changes
   useEffect(() => {
@@ -155,6 +173,7 @@ const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContaine
               <>
                 <MapComponent location={weatherData.mapLocation} />
                 <FavoriteLocations 
+                  key={`favorites-${favoritesUpdateCounter}-${isAuthenticated}`}
                   onLocationSelect={handleFavoriteLocationSelect} 
                   currentLocation={selectedLocation} 
                 />

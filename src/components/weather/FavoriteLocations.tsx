@@ -142,18 +142,13 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
           <LogIn className="w-16 h-16 mx-auto mb-4 text-white/60" />
           <h3 className="text-xl font-medium mb-3">Login Required</h3>
           <p className="text-white/70 mb-6">Please log in to view and manage your favorite locations</p>
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center">
             <Link 
               to="/login" 
-              className="px-5 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
-              Log In
-            </Link>
-            <Link 
-              to="/register" 
-              className="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-lg font-medium transition-colors"
-            >
-              Register
+              <LogIn className="w-5 h-5" />
+              <span>Sign In</span>
             </Link>
           </div>
         </div>

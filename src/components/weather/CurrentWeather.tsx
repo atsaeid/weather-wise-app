@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Cloud, CloudRain, CloudSnow, CloudSun, Moon, Sun, Wind, Clock } from 'lucide-react';
+import { Cloud, CloudRain, CloudSnow, CloudSun, Moon, Sun, Wind, Clock, Heart } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { weatherService } from '../../services/weatherService';
 
 interface CurrentWeatherProps {
   location: string;
@@ -50,6 +52,8 @@ const CurrentWeather = ({
 }: CurrentWeatherProps) => {
   const [isNight, setIsNight] = useState(false);
   const [currentLocalTime, setCurrentLocalTime] = useState(localTime || '');
+  const [isFavorite, setIsFavorite] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     // Check if it's night based on local time
@@ -79,10 +83,23 @@ const CurrentWeather = ({
       }, 30000); // Update every 30 seconds
     }
     
+    // Check if location is in favorites
+    if (isAuthenticated) {
+      const favorites = weatherService.getFavoriteLocations();
+      setIsFavorite(favorites.includes(location));
+    }
+    
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [localTime, timezone]);
+  }, [localTime, timezone, location, isAuthenticated]);
+
+  const handleToggleFavorite = () => {
+    if (!isAuthenticated) return;
+    
+    const isNowFavorite = weatherService.toggleFavorite(location);
+    setIsFavorite(isNowFavorite);
+  };
 
   return (
     <div className={`w-full rounded-2xl p-6 overflow-hidden relative transition-all duration-500 ${
@@ -99,10 +116,26 @@ const CurrentWeather = ({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           {/* Location and date */}
           <div>
-            <h2 className="text-2xl font-bold text-white mb-1 flex items-center">
-              {location}
-              <span className="animate-pulse ml-2">📍</span>
-            </h2>
+            <div className="flex items-center mb-1">
+              {isAuthenticated && (
+                <button 
+                  onClick={handleToggleFavorite}
+                  className={`mr-2 p-2 rounded-full ${
+                    isFavorite ? 'bg-red-500/30' : 'bg-white/20 hover:bg-white/30'
+                  } transition-all duration-200`}
+                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Heart 
+                    size={20} 
+                    className={`${isFavorite ? 'fill-red-500 text-red-500' : 'text-white'} transition-colors`} 
+                  />
+                </button>
+              )}
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                {location}
+                <span className="animate-pulse ml-2">📍</span>
+              </h2>
+            </div>
             <p className="text-white/80 text-sm">
               {new Date().toLocaleDateString(undefined, { 
                 weekday: 'long',
