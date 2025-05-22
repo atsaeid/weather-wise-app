@@ -2,6 +2,8 @@ import './App.css'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Home from './pages/Home'
+import RecentPage from './pages/RecentPage'
+import MapPage from './pages/MapPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 
@@ -28,8 +30,9 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        {/* Home page is accessible to everyone */}
         <Route path="/" element={<Home />} />
+        <Route path="/recent" element={<RecentPage />} />
+        <Route path="/map" element={<MapPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

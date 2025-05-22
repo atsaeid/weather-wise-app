@@ -7,6 +7,17 @@ const Home = () => {
   const [backgroundClass, setBackgroundClass] = useState("from-sky-500 to-blue-900");
   const [isNight, setIsNight] = useState(false);
   const [weatherCondition, setWeatherCondition] = useState("Clear Sky");
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+
+  // Check for selected location in session storage
+  useEffect(() => {
+    const storedLocation = sessionStorage.getItem('selected_location');
+    if (storedLocation) {
+      setSelectedLocation(storedLocation);
+      // Clear the stored location after reading it
+      sessionStorage.removeItem('selected_location');
+    }
+  }, []);
 
   // Update background based on weather condition and time of day
   useEffect(() => {
@@ -201,10 +212,13 @@ const Home = () => {
       {/* Weather effects */}
       {renderWeatherEffects()}
       
-      <div className="relative min-h-screen">
+      <div className="relative">
         <Header />
-        <div className="container mx-auto mt-1 pb-20">
-          <WeatherForecastContainer onConditionChange={handleConditionChange} />
+        <div className="container mx-auto mt-1">
+          <WeatherForecastContainer 
+            onConditionChange={handleConditionChange} 
+            initialLocation={selectedLocation}
+          />
         </div>
         <BottomNav />
       </div>

@@ -7,21 +7,30 @@ import MapComponent from './MapComponent';
 import FavoriteLocations from './FavoriteLocations';
 import LocationDetail from './LocationDetail';
 import { weatherService, type WeatherData } from '../../services/weatherService';
+import { recentService } from '../../services/recentService';
 import { useAuth } from '../../context/AuthContext';
 
 // Props interface
 interface WeatherForecastContainerProps {
   onConditionChange?: (condition: string) => void;
+  initialLocation?: string | null;
 }
 
-const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContainerProps) => {
+const WeatherForecastContainer = ({ onConditionChange, initialLocation }: WeatherForecastContainerProps) => {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState('Tehran');
+  const [selectedLocation, setSelectedLocation] = useState(initialLocation || 'Tehran');
   const [isLoading, setIsLoading] = useState(true);
   const [showLocationDetail, setShowLocationDetail] = useState(false);
   const [selectedDetailLocation, setSelectedDetailLocation] = useState<WeatherData | null>(null);
   const { isAuthenticated } = useAuth();
   const [favoritesUpdateCounter, setFavoritesUpdateCounter] = useState(0);
+
+  // Update selected location when initialLocation changes
+  useEffect(() => {
+    if (initialLocation) {
+      setSelectedLocation(initialLocation);
+    }
+  }, [initialLocation]);
 
   // Force refresh when favorites change
   const refreshFavorites = useCallback(() => {
@@ -46,6 +55,9 @@ const WeatherForecastContainer = ({ onConditionChange }: WeatherForecastContaine
         // Get weather data for the selected location
         const data = weatherService.getWeatherData(selectedLocation);
         setWeatherData(data);
+        
+        // Add to recent locations
+        recentService.addToRecent(selectedLocation);
         
         // Notify parent about condition change
         if (onConditionChange) {
