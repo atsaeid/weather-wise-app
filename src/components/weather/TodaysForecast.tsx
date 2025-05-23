@@ -1,5 +1,7 @@
 import { Clock } from 'lucide-react';
 import { Cloud, CloudRain, CloudSnow, CloudSun, Moon, Sun, Wind } from 'lucide-react';
+import { formatToISOWithMilliseconds, formatTimeOnly } from '../../utils/dateFormatter';
+import { roundNumber } from '../../utils/numberFormatter';
 
 interface HourlyForecast {
   time: string;
@@ -69,7 +71,7 @@ const TodaysForecast = ({ hourlyForecasts }: TodaysForecastProps) => {
                     isCurrentHour ? 'bg-white/20 scale-105 shadow-lg' : 'hover:bg-white/10'
                   }`}
                 >
-                  <p className="text-white/80 text-xs mb-2">{forecast.time}</p>
+                  <p className="text-white/80 text-xs mb-2">{formatTimeOnly(forecast.time)}</p>
                   
                   <div className={`transition-transform ${isCurrentHour ? 'animate-bounce-slow' : ''}`}>
                     {getWeatherIcon(forecast.condition, isNight)}
@@ -80,7 +82,7 @@ const TodaysForecast = ({ hourlyForecasts }: TodaysForecastProps) => {
                   {forecast.precipitation > 0 && (
                     <div className="flex items-center mt-1">
                       <span className="text-xs text-blue-300 animate-pulse">💧</span>
-                      <span className="text-xs text-blue-300 ml-0.5">{forecast.precipitation}%</span>
+                      <span className="text-xs text-blue-300 ml-0.5">{roundNumber(forecast.precipitation)}%</span>
                     </div>
                   )}
                 </div>

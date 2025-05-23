@@ -59,9 +59,10 @@ export const recentService = {
   /**
    * Get weather data for all recent locations
    */
-  getRecentLocationsWeather: (): WeatherData[] => {
+  getRecentLocationsWeather: async (): Promise<WeatherData[]> => {
     const recents = getRecentLocations();
-    return recents.map(location => weatherService.getWeatherData(location));
+    const weatherPromises = recents.map(location => weatherService.getWeatherData(location));
+    return Promise.all(weatherPromises);
   },
   
   /**

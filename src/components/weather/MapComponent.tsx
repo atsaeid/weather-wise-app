@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Maximize2, Minimize2, X } from 'lucide-react';
 import { weatherService } from '../../services/weatherService';
-import { config } from '../../config';
 
 interface MapComponentProps {
   location?: { lat: number; lon: number };
@@ -15,7 +14,7 @@ const MapComponent = ({ location, onLocationSelect }: MapComponentProps) => {
   const [isSearching, setIsSearching] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState<string[]>([]);
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
-  const [mapUrl, setMapUrl] = useState<string>('');
+  const [mapImage, setMapImage] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Load available locations on mount
@@ -38,23 +37,32 @@ const MapComponent = ({ location, onLocationSelect }: MapComponentProps) => {
     };
   }, []);
 
-  // Generate static map URL when location changes
+  // Generate static map image when location changes
   useEffect(() => {
-    if (location?.lat && location?.lon) {
-      const url = new URL(config.locationIQ.staticMapUrl);
-      const params = new URLSearchParams({
-        key: config.locationIQ.apiKey,
-        center: `${location.lat},${location.lon}`,
-        zoom: '16.5',
-        size: '800x600',
-        format: 'jpg',
-        markers: `icon:default|color:red|size:large|${location.lat},${location.lon}`,
-        style: 'streets',
-        scale: '2',
-      });
-      url.search = params.toString();
-      setMapUrl(url.toString());
-    }
+    const loadMapImage = async () => {
+      if (location?.lat && location?.lon) {
+        try {
+          setIsLoading(true);
+          const imageBase64 = await weatherService.getStaticMapImage(
+            location.lat,
+            location.lon,
+            16, // zoom level
+            800, // width
+            600  // height
+          );
+          setMapImage(imageBase64);
+        } catch (error) {
+          console.error('Error loading map image:', error);
+          setMapImage(null);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setMapImage(null);
+      }
+    };
+
+    loadMapImage();
   }, [location]);
 
   const toggleExpand = () => {
@@ -173,12 +181,12 @@ const MapComponent = ({ location, onLocationSelect }: MapComponentProps) => {
         
         <div className="flex-1 relative">
           <div className="relative h-full w-full rounded-xl overflow-hidden shadow-xl">
-            {mapUrl ? (
+            {mapImage ? (
               <div className="relative h-full w-full group">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative h-full w-full overflow-hidden">
                   <img 
-                    src={mapUrl} 
+                    src={`data:image/png;base64,${mapImage}`}
                     alt="Location Map"
                     className="absolute w-full h-full object-cover object-center transform transition-transform duration-700 group-hover:scale-105"
                     style={{ imageRendering: 'crisp-edges' }}

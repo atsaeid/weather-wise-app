@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Cloud, CloudRain, CloudSnow, CloudSun, Moon, Sun, Wind, Clock, Heart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { weatherService } from '../../services/weatherService';
+import { formatWeatherDateTime } from '../../utils/dateFormatter';
+import { roundNumber } from '../../utils/numberFormatter';
 
 interface CurrentWeatherProps {
   location: string;
@@ -155,10 +157,10 @@ const CurrentWeather = ({
                 <span className="absolute text-2xl top-0 -right-4 group-hover:animate-bounce">°C</span>
               </div>
               <p className="text-white/80">{condition}</p>
-              {currentLocalTime && (
+              {localTime && (
                 <p className="text-white/70 flex items-center mt-1 text-sm">
                   <Clock size={14} className="inline mr-1" />
-                  <span>{currentLocalTime}</span>
+                  <span>{formatWeatherDateTime(localTime)}</span>
                 </p>
               )}
             </div>
@@ -183,7 +185,7 @@ const CurrentWeather = ({
             </div>
             <div>
               <p className="text-white/70">Humidity</p>
-              <p className="font-semibold">{humidity}%</p>
+              <p className="font-semibold">{roundNumber(humidity)}%</p>
             </div>
           </div>
           

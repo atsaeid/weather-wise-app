@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { weatherService } from '../../services/weatherService';
 import type { WeatherData } from '../../services/weatherService';
+import { roundNumber } from '../../utils/numberFormatter';
 
 interface LocationDetailProps {
   weatherData: WeatherData;
@@ -92,7 +93,7 @@ const LocationDetail = ({ weatherData }: LocationDetailProps) => {
             <Droplets className="w-4 h-4 mr-2 text-blue-400" />
             <span className="text-sm">Humidity</span>
           </div>
-          <span className="text-xl font-semibold">{weatherData.humidity}%</span>
+          <span className="text-xl font-semibold">{roundNumber(weatherData.humidity)}%</span>
         </div>
         
         <div className="bg-white/5 rounded-lg p-3">

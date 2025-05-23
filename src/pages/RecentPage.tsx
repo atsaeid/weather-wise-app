@@ -6,6 +6,7 @@ import { recentService } from '../services/recentService';
 import { weatherService, type WeatherData } from '../services/weatherService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { formatWeatherDateTime } from '../utils/dateFormatter';
 
 const RecentPage = () => {
   const [recentWeatherData, setRecentWeatherData] = useState<WeatherData[]>([]);
@@ -15,11 +16,16 @@ const RecentPage = () => {
 
   // Load recent locations on mount
   useEffect(() => {
-    const loadRecentLocations = () => {
-      setIsLoading(true);
-      const weatherData = recentService.getRecentLocationsWeather();
-      setRecentWeatherData(weatherData);
-      setIsLoading(false);
+    const loadRecentLocations = async () => {
+      try {
+        setIsLoading(true);
+        const weatherData = await recentService.getRecentLocationsWeather();
+        setRecentWeatherData(weatherData);
+      } catch (error) {
+        console.error('Error loading recent locations:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     loadRecentLocations();
@@ -166,7 +172,7 @@ const RecentPage = () => {
                   <div className="flex justify-between items-end">
                     <div>
                       <p className="text-white/80 text-sm mb-1">{weather.condition}</p>
-                      <p className="text-white/60 text-xs">{weather.localTime}</p>
+                      <p className="text-white/60 text-xs">{formatWeatherDateTime(weather.localTime)}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {getWeatherIcon(weather.condition)}

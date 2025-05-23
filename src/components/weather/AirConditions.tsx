@@ -1,4 +1,5 @@
 import { Droplets, Gauge, Sun, Thermometer, Wind } from 'lucide-react';
+import { roundNumber } from '../../utils/numberFormatter';
 
 interface AirConditionsProps {
   feelsLike: number;
@@ -51,10 +52,10 @@ const AirConditions = ({
               <p className="text-sm">Humidity</p>
             </div>
             <div className="relative pt-1">
-              <p className="text-white text-lg font-semibold">{humidity}%</p>
+              <p className="text-white text-lg font-semibold">{roundNumber(humidity)}%</p>
               <div className="overflow-hidden h-1.5 text-xs flex rounded-full bg-white/20 mt-1 w-full">
                 <div 
-                  style={{ width: `${humidity}%` }} 
+                  style={{ width: `${roundNumber(humidity)}%` }} 
                   className="animate-grow-width shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-yellow-300 to-yellow-500">
                 </div>
               </div>

@@ -40,6 +40,9 @@ export interface WeatherData {
   mapLocation: MapLocation;
   hourlyForecasts: HourlyForecast[];
   dailyForecasts: DailyForecast[];
+  isFavorite?: boolean;
+
+  uvIndex: number;
 }
 
 export interface LocationSearchResult {
@@ -148,19 +151,33 @@ const saveFavoriteLocations = (favorites: string[]): void => {
 // Functions to get localized time for each location
 const getLocalTime = (timezone: string): string => {
   try {
-    return new Date().toLocaleTimeString('en-US', { 
+    const date = new Date();
+    const options: Intl.DateTimeFormatOptions = { 
       timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
-    });
+      second: '2-digit',
+      hour12: false
+    };
+    
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    const parts = formatter.formatToParts(date);
+    
+    // Construct ISO string with timezone
+    const year = parts.find(p => p.type === 'year')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    const hour = parts.find(p => p.type === 'hour')?.value;
+    const minute = parts.find(p => p.type === 'minute')?.value;
+    const second = parts.find(p => p.type === 'second')?.value;
+    
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}.0000000+00:00`;
   } catch (error) {
     console.error('Error getting local time:', error);
-    return new Date().toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: true 
-    });
+    return new Date().toISOString();
   }
 };
 
@@ -179,13 +196,12 @@ const getWeatherCondition = (locationName: string): string => {
   return conditions[locationName as keyof typeof conditions] || 'Clear Sky';
 };
 
-// Mock weather data generator
+// Generate mock weather data
 const generateWeatherData = (locationName: string): WeatherData => {
   const location = locationData.find(loc => loc.name === locationName) || locationData[0];
   const condition = getWeatherCondition(locationName);
   const timezone = location.timezone;
   const localTime = getLocalTime(timezone);
-  const favorites = getFavoriteLocations();
   
   // Generate mock hourly forecast
   const hourlyForecasts: HourlyForecast[] = [];
@@ -213,14 +229,12 @@ const generateWeatherData = (locationName: string): WeatherData => {
   for (let i = 0; i < 7; i++) {
     const forecastDate = new Date();
     forecastDate.setDate(forecastDate.getDate() + i);
-    const day = days[forecastDate.getDay()];
     const date = `${months[forecastDate.getMonth()]} ${forecastDate.getDate()}`;
     
     dailyForecasts.push({
-      day,
       date,
-      highTemp: location.baseTemp + Math.floor(Math.random() * 5),
-      lowTemp: location.baseTemp - Math.floor(Math.random() * 8) - 2,
+      maxTemp: location.baseTemp + Math.floor(Math.random() * 5),
+      minTemp: location.baseTemp - Math.floor(Math.random() * 8) - 2,
       condition: i === 0 ? condition : getWeatherCondition(locationName),
       precipitation: Math.random() > 0.7 ? Math.floor(Math.random() * 40) : 0,
     });
@@ -233,14 +247,12 @@ const generateWeatherData = (locationName: string): WeatherData => {
     feelsLike: location.baseTemp + 2,
     humidity: Math.floor(Math.random() * 60) + 30,
     windSpeed: Math.floor(Math.random() * 15) + 5,
-    uvIndex: Math.floor(Math.random() * 10) + 1,
     pressure: Math.floor(Math.random() * 30) + 1000,
     timezone,
     localTime,
     hourlyForecasts,
     dailyForecasts,
-    mapLocation: { lat: location.lat, lon: location.lon },
-    isFavorite: favorites.includes(locationName)
+    mapLocation: { lat: location.lat, lon: location.lon }
   };
 };
 
@@ -276,10 +288,14 @@ class WeatherService {
     return this.getCurrentLocationPromise();
   }
 
+  getAvailableLocations(): string[] {
+    return locationData.map(location => location.name);
+  }
+
   async getWeatherData(location: string): Promise<WeatherData> {
     try {
       const response = await axiosInstance.get<WeatherData>(
-        `${config.api.weather.baseUrl}/${encodeURIComponent(location)}`
+        `${config.endpoints.weather}/${encodeURIComponent(location)}`
       );
       return response.data;
     } catch (error) {
@@ -295,7 +311,7 @@ class WeatherService {
   async getWeatherByCoordinates(lat: number, lon: number): Promise<WeatherData> {
     try {
       const response = await axiosInstance.get<WeatherData>(
-        `${config.api.weather.baseUrl}/coordinates`,
+        `${config.endpoints.weather}/coordinates`,
         {
           params: { lat, lon },
         }
@@ -313,13 +329,13 @@ class WeatherService {
 
   async searchLocations(query: string): Promise<LocationSearchResult[]> {
     try {
-      const { data } = await axiosInstance.get<LocationSearchResult[]>(
-        config.api.weather.searchUrl,
+      const response = await axiosInstance.get<LocationSearchResult[]>(
+        `${config.endpoints.weather}/search`,
         {
           params: { query },
         }
       );
-      return data;
+      return response.data;
     } catch (error) {
       if (isAxiosError(error)) {
         throw new Error(
@@ -349,7 +365,7 @@ class WeatherService {
   async addToFavorites(locationName: string): Promise<void> {
     try {
       await axiosInstance.post(
-        `${config.api.favorites.baseUrl}/${encodeURIComponent(locationName)}`
+        `${config.endpoints.weather}/favorites/${encodeURIComponent(locationName)}`
       );
     } catch (error) {
       if (isAxiosError(error)) {
@@ -364,7 +380,7 @@ class WeatherService {
   async removeFromFavorites(locationName: string): Promise<void> {
     try {
       await axiosInstance.delete(
-        `${config.api.favorites.baseUrl}/${encodeURIComponent(locationName)}`
+        `${config.endpoints.weather}/favorites/${encodeURIComponent(locationName)}`
       );
     } catch (error) {
       if (isAxiosError(error)) {
@@ -404,6 +420,21 @@ class WeatherService {
         );
       }
       throw error;
+    }
+  }
+
+  toggleFavorite(locationName: string): boolean {
+    const favorites = getFavoriteLocations();
+    const isFavorite = favorites.includes(locationName);
+    
+    if (isFavorite) {
+      // Remove from favorites
+      saveFavoriteLocations(favorites.filter(loc => loc !== locationName));
+      return false;
+    } else {
+      // Add to favorites
+      saveFavoriteLocations([...favorites, locationName]);
+      return true;
     }
   }
 }

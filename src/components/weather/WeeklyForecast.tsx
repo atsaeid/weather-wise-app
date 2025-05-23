@@ -1,5 +1,7 @@
 import { Calendar } from 'lucide-react';
 import { Cloud, CloudRain, CloudSnow, CloudSun, Moon, Sun } from 'lucide-react';
+import { formatToISOWithMilliseconds, formatDateOnly } from '../../utils/dateFormatter';
+import { roundNumber } from '../../utils/numberFormatter';
 
 interface DailyForecast {
   day: string;
@@ -76,14 +78,14 @@ const WeeklyForecast = ({ dailyForecasts }: WeeklyForecastProps) => {
                   <p className="text-white font-medium">
                     {isToday ? 'Today' : forecast.day}
                   </p>
-                  <p className="text-white/60 text-xs">{forecast.date}</p>
+                  <p className="text-white/60 text-xs">{formatDateOnly(forecast.date)}</p>
                 </div>
 
                 {/* Precipitation if any */}
                 {forecast.precipitation > 0 && (
                   <div className="flex items-center text-blue-300">
                     <span className="text-sm mr-0.5">💧</span>
-                    <span className="text-xs">{forecast.precipitation}%</span>
+                    <span className="text-xs">{roundNumber(forecast.precipitation)}%</span>
                   </div>
                 )}
 

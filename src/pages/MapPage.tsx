@@ -146,15 +146,15 @@ const MapPage = () => {
               lat: position.coords.latitude,
               lon: position.coords.longitude
             };
-            console.log("Successfully got user location:", newLocation);
+            // console.log("Successfully got user location:", newLocation);
             setUserLocation(newLocation);
             setMapReady(true);
           },
           (error) => {
-            console.error('Error getting location:', error);
+            // console.error('Error getting location:', error);
             // If can't get user location, default to Tehran
             const defaultLocation = { lat: 35.6892, lon: 51.3890 };
-            console.log("Using default location:", defaultLocation);
+            // console.log("Using default location:", defaultLocation);
             setUserLocation(defaultLocation);
             setMapReady(true);
           },

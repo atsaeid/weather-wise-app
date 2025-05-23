@@ -1,5 +1,6 @@
 import React from 'react';
 import type { WeatherData } from '../../services/weatherService';
+import { roundNumber } from '../../utils/numberFormatter';
 
 interface WeatherCardProps {
   weatherData: WeatherData;
@@ -24,7 +25,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ weatherData }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
         <div className="bg-white/5 rounded p-3">
           <p className="text-white/60">Humidity</p>
-          <p className="text-white text-lg">{weatherData.humidity}%</p>
+          <p className="text-white text-lg">{roundNumber(weatherData.humidity)}%</p>
         </div>
         <div className="bg-white/5 rounded p-3">
           <p className="text-white/60">Wind Speed</p>

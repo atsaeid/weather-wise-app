@@ -17,6 +17,7 @@ A modern weather application built with React, TypeScript, and Tailwind CSS that
 
 - Node.js 16.x or higher
 - npm or yarn
+- [WeatherWise API](https://github.com/atsaeid/weather-wise-api) - .NET Core backend service
 
 ## Getting Started
 

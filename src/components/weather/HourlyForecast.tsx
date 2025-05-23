@@ -1,8 +1,10 @@
 import React from 'react';
-import type { HourlyForecast } from '../../services/weatherService';
+import type { HourlyForecast as HourlyForecastType } from '../../services/weatherService';
+import { formatTimeOnly } from '../../utils/dateFormatter';
+import { roundNumber } from '../../utils/numberFormatter';
 
 interface HourlyForecastProps {
-  forecasts: HourlyForecast[];
+  forecasts: HourlyForecastType[];
 }
 
 const HourlyForecast: React.FC<HourlyForecastProps> = ({ forecasts }) => {
@@ -15,10 +17,7 @@ const HourlyForecast: React.FC<HourlyForecastProps> = ({ forecasts }) => {
             className="flex flex-col items-center bg-white/5 rounded-lg p-4 min-w-[100px]"
           >
             <p className="text-white/80 text-sm">
-              {new Date(forecast.time).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {formatTimeOnly(forecast.time)}
             </p>
             <div className="my-2">
               <img
@@ -28,7 +27,7 @@ const HourlyForecast: React.FC<HourlyForecastProps> = ({ forecasts }) => {
               />
             </div>
             <p className="text-white font-semibold">{Math.round(forecast.temperature)}°</p>
-            <p className="text-white/60 text-sm">{forecast.precipitation}%</p>
+            <p className="text-white/60 text-sm">{roundNumber(forecast.precipitation)}%</p>
           </div>
         ))}
       </div>

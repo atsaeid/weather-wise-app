@@ -11,6 +11,7 @@ interface FavoriteLocationsProps {
 
 const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocationsProps) => {
   const [favoriteWeatherData, setFavoriteWeatherData] = useState<WeatherData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showAllLocations, setShowAllLocations] = useState(false);
   const { isAuthenticated } = useAuth();
   const favoritesRef = useRef<HTMLDivElement>(null);
@@ -19,12 +20,24 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
   useEffect(() => {
     if (!isAuthenticated) return;
     
-    const loadFavorites = () => {
-      const favorites = weatherService.getFavoriteLocations();
-      
-      // Fetch weather data for favorites
-      const weatherData = favorites.map(location => weatherService.getWeatherData(location));
-      setFavoriteWeatherData(weatherData);
+    const loadFavorites = async () => {
+      try {
+        setIsLoading(true);
+        // Get favorite locations
+        const favorites = await weatherService.getFavoriteLocations();
+        
+        // Fetch weather data for all favorites in parallel
+        const weatherDataPromises = favorites.map(location => 
+          weatherService.getWeatherData(location)
+        );
+        
+        const weatherData = await Promise.all(weatherDataPromises);
+        setFavoriteWeatherData(weatherData);
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     loadFavorites();
@@ -198,48 +211,38 @@ const FavoriteLocations = ({ onLocationSelect, currentLocation }: FavoriteLocati
           <Star className="w-5 h-5 fill-yellow-400" />
         </div>
       </div>
-      
-      {sortedWeatherData.length === 0 ? (
-        <div className="text-center py-8 text-white/70">
-          <Heart className="w-12 h-12 mx-auto mb-3 text-white/50" />
-          <p>No favorite locations yet</p>
-          <p className="text-sm mt-2">Add locations to your favorites to see them here</p>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+        </div>
+      ) : favoriteWeatherData.length === 0 ? (
+        <div className="text-center py-8 px-4">
+          <Star className="w-12 h-12 mx-auto mb-3 text-white/40" />
+          <p className="text-white/70">No favorite locations yet</p>
         </div>
       ) : (
-        <>
-          {/* Always visible locations (up to 10) */}
-          <div className="space-y-3 w-full">
-            {initialLocations.map(weather => renderLocationItem(weather))}
-          </div>
-
-          {/* Show more section if there are additional locations */}
+        <div className="space-y-3">
+          {initialLocations.map(renderLocationItem)}
+          
           {additionalLocations.length > 0 && (
             <>
-              {!showAllLocations ? (
-                <button 
-                  onClick={() => setShowAllLocations(true)}
-                  className="mt-4 w-full py-3 flex items-center justify-center text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all h-[48px]"
-                >
-                  <span className="mr-1">Show {additionalLocations.length} more</span>
-                  <ChevronDown size={16} />
-                </button>
-              ) : (
-                <div className="mt-4 space-y-3 pt-3 border-t border-white/10 w-full">
-                  <div className="max-h-[250px] overflow-y-auto hide-scrollbar pr-1 space-y-3 w-full">
-                    {additionalLocations.map(weather => renderLocationItem(weather))}
-                  </div>
-                  <button 
-                    onClick={() => setShowAllLocations(false)}
-                    className="w-full py-3 flex items-center justify-center text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all h-[48px]"
-                  >
-                    <span className="mr-1">Show less</span>
-                    <ChevronDown size={16} className="transform rotate-180" />
-                  </button>
+              {showAllLocations && (
+                <div className="space-y-3 mt-3">
+                  {additionalLocations.map(renderLocationItem)}
                 </div>
               )}
+              
+              <button
+                onClick={() => setShowAllLocations(!showAllLocations)}
+                className="w-full py-2 px-4 rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center gap-2 text-white/80"
+              >
+                <span>{showAllLocations ? 'Show Less' : `Show ${additionalLocations.length} More`}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showAllLocations ? 'rotate-180' : ''}`} />
+              </button>
             </>
           )}
-        </>
+        </div>
       )}
     </div>
   );
