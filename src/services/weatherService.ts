@@ -1,3 +1,5 @@
+import { config } from '../config';
+
 // Weather data interface
 export interface WeatherData {
   location: string;
@@ -30,6 +32,21 @@ export interface DailyForecast {
   lowTemp: number;
   condition: string;
   precipitation: number;
+}
+
+export interface LocationSearchResult {
+  name: string;
+  country: string;
+  coordinates: {
+    lat: number;
+    lon: number;
+  };
+  timezone: string;
+}
+
+export interface UserLocation {
+  latitude: number;
+  longitude: number;
 }
 
 // Available locations with their time zones
@@ -219,54 +236,141 @@ const generateWeatherData = (locationName: string): WeatherData => {
   };
 };
 
-// Export the service
+// Helper function to get auth header
+const getAuthHeader = (): HeadersInit => {
+  const token = localStorage.getItem(config.auth.tokenKey);
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 export const weatherService = {
-  getWeatherData: (locationName: string = 'Tehran'): WeatherData => {
-    return generateWeatherData(locationName);
+  async getCurrentLocation(): Promise<UserLocation> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by your browser'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          reject(new Error('Unable to retrieve your location'));
+        }
+      );
+    });
   },
-  
-  getAvailableLocations: (): string[] => {
-    return locationData.map(loc => loc.name);
+
+  async getWeatherByCoordinates(latitude: number, longitude: number): Promise<WeatherData> {
+    const response = await fetch(
+      `${config.api.weather.baseUrl}/coordinates?lat=${latitude}&lon=${longitude}`,
+      {
+        headers: getAuthHeader(),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch weather data');
+    }
+
+    return response.json();
   },
-  
-  getFavoriteLocations: (): string[] => {
-    return getFavoriteLocations();
+
+  async getWeatherData(locationName: string): Promise<WeatherData> {
+    const response = await fetch(
+      `${config.api.weather.baseUrl}/${encodeURIComponent(locationName)}`,
+      {
+        headers: getAuthHeader(),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch weather data');
+    }
+
+    return response.json();
   },
-  
-  addToFavorites: (locationName: string): void => {
-    const favorites = getFavoriteLocations();
-    if (!favorites.includes(locationName)) {
-      favorites.push(locationName);
-      saveFavoriteLocations(favorites);
+
+  async searchLocations(query: string): Promise<LocationSearchResult[]> {
+    const response = await fetch(
+      `${config.api.weather.searchUrl}?query=${encodeURIComponent(query)}`,
+      {
+        headers: getAuthHeader(),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Location search failed');
+    }
+
+    return response.json();
+  },
+
+  async getFavoriteLocations(): Promise<string[]> {
+    const response = await fetch(config.favorites.baseUrl, {
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch favorites');
+    }
+
+    const data = await response.json();
+    return data.locations;
+  },
+
+  async addToFavorites(locationName: string): Promise<void> {
+    const response = await fetch(
+      `${config.favorites.baseUrl}/${encodeURIComponent(locationName)}`,
+      {
+        method: 'POST',
+        headers: getAuthHeader(),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to add to favorites');
     }
   },
-  
-  removeFromFavorites: (locationName: string): void => {
-    const favorites = getFavoriteLocations();
-    const updatedFavorites = favorites.filter(loc => loc !== locationName);
-    saveFavoriteLocations(updatedFavorites);
-  },
-  
-  toggleFavorite: (locationName: string): boolean => {
-    const favorites = getFavoriteLocations();
-    const isFavorite = favorites.includes(locationName);
-    
-    if (isFavorite) {
-      // Remove from favorites
-      const updatedFavorites = favorites.filter(loc => loc !== locationName);
-      saveFavoriteLocations(updatedFavorites);
-      return false;
-    } else {
-      // Add to favorites
-      favorites.push(locationName);
-      saveFavoriteLocations(favorites);
-      return true;
+
+  async removeFromFavorites(locationName: string): Promise<void> {
+    const response = await fetch(
+      `${config.favorites.baseUrl}/${encodeURIComponent(locationName)}`,
+      {
+        method: 'DELETE',
+        headers: getAuthHeader(),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to remove from favorites');
     }
   },
-  
-  getLocalTime: (timezone: string): string => {
-    return getLocalTime(timezone);
-  }
+
+  async getStaticMapImage(
+    lat: number,
+    lon: number,
+    zoom: number = 12,
+    width: number = 800,
+    height: number = 600
+  ): Promise<string> {
+    const response = await fetch(
+      `${config.api.baseUrl}/api/Map/static?latitude=${lat}&longitude=${lon}&zoom=${zoom}&width=${width}&height=${height}`,
+      {
+        headers: getAuthHeader(),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch map image');
+    }
+
+    const data = await response.json();
+    return data.imageBase64; // The backend returns base64 encoded image
+  },
 };
 
 export default weatherService; 

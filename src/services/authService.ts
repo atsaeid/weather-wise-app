@@ -1,6 +1,8 @@
+import { config } from '../config';
+
 // Mock user interface
 export interface User {
-  id: string;
+  id: string;  // GUID from backend
   username: string;
   email: string;
 }
@@ -30,73 +32,125 @@ export interface RegisterCredentials extends LoginCredentials {
   username: string;
 }
 
+export interface AuthResponse {
+  user: User;
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  };
+}
+
 // Mock authentication service
 export const authService = {
   // Check if user is logged in
   isAuthenticated(): boolean {
-    return !!localStorage.getItem(AUTH_TOKEN_KEY);
+    return !!localStorage.getItem(config.auth.tokenKey);
   },
 
   // Get current user
   getCurrentUser(): User | null {
-    const userData = localStorage.getItem(USER_DATA_KEY);
+    const userData = localStorage.getItem(config.auth.tokenKey);
     if (!userData) return null;
     return JSON.parse(userData);
   },
 
   // Mock login
   async login(credentials: LoginCredentials): Promise<User> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, MOCK_API_DELAY));
+    const response = await fetch(config.auth.endpoints.login, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
 
-    // Check if user exists (in real app, would validate password too)
-    const user = MOCK_USERS.find(u => u.email === credentials.email);
-    
-    if (!user) {
-      throw new Error('Invalid credentials');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
 
-    // Store auth token and user data
-    localStorage.setItem(AUTH_TOKEN_KEY, `mock-token-${user.id}`);
-    localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
+    const data: AuthResponse = await response.json();
     
-    return user;
+    // Store tokens
+    localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
+    localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    
+    return data.user;
   },
 
   // Mock register
   async register(credentials: RegisterCredentials): Promise<User> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, MOCK_API_DELAY));
+    const response = await fetch(config.auth.endpoints.register, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
 
-    // Check if user already exists
-    if (MOCK_USERS.some(u => u.email === credentials.email)) {
-      throw new Error('User already exists');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Registration failed');
     }
 
-    // Create new user
-    const newUser: User = {
-      id: `${MOCK_USERS.length + 1}`,
-      username: credentials.username,
-      email: credentials.email,
-    };
-
-    // Add to mock database
-    MOCK_USERS.push(newUser);
-
-    // Store auth token and user data
-    localStorage.setItem(AUTH_TOKEN_KEY, `mock-token-${newUser.id}`);
-    localStorage.setItem(USER_DATA_KEY, JSON.stringify(newUser));
-
-    return newUser;
+    const data: AuthResponse = await response.json();
+    
+    // Store tokens
+    localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
+    localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    
+    return data.user;
   },
 
   // Mock logout
   async logout(): Promise<void> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, MOCK_API_DELAY));
+    const token = localStorage.getItem(config.auth.tokenKey);
     
-    // Remove auth token and user data
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(USER_DATA_KEY);
-  }
+    if (token) {
+      try {
+        await fetch(config.auth.endpoints.logout, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+      } catch (error) {
+        console.error('Logout request failed:', error);
+      }
+    }
+    
+    // Clear local storage regardless of API call result
+    localStorage.removeItem(config.auth.tokenKey);
+    localStorage.removeItem(config.auth.refreshTokenKey);
+    localStorage.removeItem('user');
+  },
+
+  async refreshToken(): Promise<void> {
+    const refreshToken = localStorage.getItem(config.auth.refreshTokenKey);
+    
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await fetch(config.auth.endpoints.refresh, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Token refresh failed');
+    }
+
+    const data: AuthResponse = await response.json();
+    
+    // Update tokens
+    localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
+    localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
+  },
 }; 
