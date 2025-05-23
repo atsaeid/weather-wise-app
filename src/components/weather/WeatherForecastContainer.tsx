@@ -125,76 +125,71 @@ const WeatherForecastContainer = ({ onConditionChange, initialLocation }: Weathe
   }
 
   return (
-    <div className="pb-16">
-      <div className="space-y-5">
-        {/* Current Weather - Full Width */}
-        <div className="w-full">
-          <CurrentWeather
-            location={weatherData.location}
-            temperature={weatherData.temperature}
-            condition={weatherData.condition}
+    <div className="space-y-5">
+      {/* Current Weather - Full Width Top Row */}
+      <div className="w-full">
+        <CurrentWeather
+          location={weatherData.location}
+          temperature={weatherData.temperature}
+          condition={weatherData.condition}
+          feelsLike={weatherData.feelsLike}
+          humidity={weatherData.humidity}
+          windSpeed={weatherData.windSpeed}
+          localTime={weatherData.localTime}
+          timezone={weatherData.timezone}
+        />
+      </div>
+
+      {/* Content Row with Left and Right Columns */}
+      <div className="flex flex-col lg:flex-row gap-5">
+        {/* Left Column - Weather Info (8/12) */}
+        <div className="lg:w-8/12 space-y-5">
+          <AirConditions
             feelsLike={weatherData.feelsLike}
             humidity={weatherData.humidity}
             windSpeed={weatherData.windSpeed}
-            localTime={weatherData.localTime}
-            timezone={weatherData.timezone}
+            uvIndex={weatherData.uvIndex}
+            pressure={weatherData.pressure}
           />
+
+          <TodaysForecast hourlyForecasts={weatherData.hourlyForecasts} />
+
+          <WeeklyForecast dailyForecasts={weatherData.dailyForecasts} />
         </div>
 
-        {/* Two column layout for desktop */}
-        <div className="flex flex-col lg:flex-row gap-5">
-          {/* Left column - scrollable content */}
-          <div className="flex-1 space-y-5 order-2 lg:order-1">
-            {/* Air Conditions */}
-            <AirConditions
-              feelsLike={weatherData.feelsLike}
-              humidity={weatherData.humidity}
-              windSpeed={weatherData.windSpeed}
-              uvIndex={weatherData.uvIndex}
-              pressure={weatherData.pressure}
-            />
-
-            {/* Today's Forecast */}
-            <TodaysForecast hourlyForecasts={weatherData.hourlyForecasts} />
-
-            {/* Weekly Forecast */}
-            <WeeklyForecast dailyForecasts={weatherData.dailyForecasts} />
-          </div>
-
-          {/* Right column - Map and Favorites */}
-          <div className="lg:w-2/5 order-1 lg:order-2 space-y-5">
-            {showLocationDetail && selectedDetailLocation ? (
-              <div className="relative">
-                <LocationDetail weatherData={selectedDetailLocation} />
-                <div className="flex justify-between mt-4">
-                  <button
-                    onClick={() => setShowLocationDetail(false)}
-                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                  >
-                    Back to Favorites
-                  </button>
-                  <button
-                    onClick={handleSwitchToLocation}
-                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors"
-                  >
-                    View Full Details
-                  </button>
-                </div>
+        {/* Right Column - Map and Favorites (4/12) */}
+        <div className="lg:w-4/12 space-y-5">
+          {showLocationDetail && selectedDetailLocation ? (
+            <div className="relative">
+              <LocationDetail weatherData={selectedDetailLocation} />
+              <div className="flex justify-between mt-4">
+                <button
+                  onClick={() => setShowLocationDetail(false)}
+                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  Back to Favorites
+                </button>
+                <button
+                  onClick={handleSwitchToLocation}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors"
+                >
+                  View Full Details
+                </button>
               </div>
-            ) : (
-              <>
-                <MapComponent 
-                  location={weatherData.mapLocation} 
-                  onLocationSelect={handleLocationChange}
-                />
-                <FavoriteLocations 
-                  key={`favorites-${favoritesUpdateCounter}-${isAuthenticated}`}
-                  onLocationSelect={handleFavoriteLocationSelect} 
-                  currentLocation={selectedLocation} 
-                />
-              </>
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              <MapComponent 
+                location={weatherData.mapLocation} 
+                onLocationSelect={handleLocationChange}
+              />
+              <FavoriteLocations 
+                key={`favorites-${favoritesUpdateCounter}-${isAuthenticated}`}
+                onLocationSelect={handleFavoriteLocationSelect} 
+                currentLocation={selectedLocation} 
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
