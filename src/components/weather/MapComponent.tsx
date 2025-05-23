@@ -186,7 +186,7 @@ const MapComponent = ({ location, onLocationSelect }: MapComponentProps) => {
                   />
                 </div>
                 {location && (
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
                     <div className="relative">
                       <div className="absolute -inset-4 bg-white/10 backdrop-blur-sm rounded-full animate-pulse" />
                       <MapPin size={32} className="text-red-500 drop-shadow-lg animate-bounce-slow" />
@@ -194,7 +194,7 @@ const MapComponent = ({ location, onLocationSelect }: MapComponentProps) => {
                     </div>
                   </div>
                 )}
-                <div className="absolute bottom-0 left-0 right-0 transition-all duration-300 ease-in-out transform translate-y-[calc(100%)] group-hover:translate-y-0 group-hover:bottom-4">
+                <div className="absolute bottom-0 left-0 right-0 transition-all duration-300 ease-in-out transform translate-y-[calc(100%)] group-hover:translate-y-0 group-hover:bottom-4 z-20">
                   <div className="mx-4">
                     <div className="bg-black/20 backdrop-blur-sm rounded-xl overflow-hidden transition-all duration-300 group-hover:bg-black/40">
                       <div className="p-3">
