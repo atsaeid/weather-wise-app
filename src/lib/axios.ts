@@ -37,8 +37,9 @@ axiosInstance.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('weather_wise_refresh_token');
         const response = await axios.post(
-          `${config.api.baseUrl}/api/Auth/refresh`,
-          { refreshToken }
+          config.auth.endpoints.refresh,
+          { refreshToken },
+          { baseURL: config.api.baseUrl }
         );
 
         const { accessToken, refreshToken: newRefreshToken } = response.data;

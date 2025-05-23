@@ -271,9 +271,12 @@ export const weatherService = {
     longitude: number
   ): Promise<WeatherData> {
     try {
-      const { data } = await axiosInstance.get<WeatherData>('/api/Weather/coordinates', {
-        params: { lat: latitude, lon: longitude },
-      });
+      const { data } = await axiosInstance.get<WeatherData>(
+        `${config.api.weather.baseUrl}/coordinates`,
+        {
+          params: { lat: latitude, lon: longitude },
+        }
+      );
       return data;
     } catch (error) {
       if (isAxiosError(error)) {
@@ -288,7 +291,7 @@ export const weatherService = {
   async getWeatherData(locationName: string): Promise<WeatherData> {
     try {
       const { data } = await axiosInstance.get<WeatherData>(
-        `/api/Weather/${encodeURIComponent(locationName)}`
+        `${config.api.weather.baseUrl}/${encodeURIComponent(locationName)}`
       );
       return data;
     } catch (error) {
@@ -304,7 +307,7 @@ export const weatherService = {
   async searchLocations(query: string): Promise<LocationSearchResult[]> {
     try {
       const { data } = await axiosInstance.get<LocationSearchResult[]>(
-        '/api/Weather/search',
+        config.api.weather.searchUrl,
         {
           params: { query },
         }
@@ -323,7 +326,7 @@ export const weatherService = {
   async getFavoriteLocations(): Promise<string[]> {
     try {
       const { data } = await axiosInstance.get<{ locations: string[] }>(
-        '/api/Favorites'
+        config.api.favorites.baseUrl
       );
       return data.locations;
     } catch (error) {
@@ -339,7 +342,7 @@ export const weatherService = {
   async addToFavorites(locationName: string): Promise<void> {
     try {
       await axiosInstance.post(
-        `/api/Favorites/${encodeURIComponent(locationName)}`
+        `${config.api.favorites.baseUrl}/${encodeURIComponent(locationName)}`
       );
     } catch (error) {
       if (isAxiosError(error)) {
@@ -354,7 +357,7 @@ export const weatherService = {
   async removeFromFavorites(locationName: string): Promise<void> {
     try {
       await axiosInstance.delete(
-        `/api/Favorites/${encodeURIComponent(locationName)}`
+        `${config.api.favorites.baseUrl}/${encodeURIComponent(locationName)}`
       );
     } catch (error) {
       if (isAxiosError(error)) {
@@ -375,7 +378,7 @@ export const weatherService = {
   ): Promise<string> {
     try {
       const { data } = await axiosInstance.get<{ imageBase64: string }>(
-        '/api/Map/static',
+        config.api.map.staticUrl,
         {
           params: {
             latitude: lat,

@@ -60,19 +60,17 @@ export const authService = {
   // Mock login
   async login(credentials: LoginCredentials): Promise<User> {
     try {
-      console.log('axiosInstance');
       const { data } = await axiosInstance.post<AuthResponse>(
-        '/api/Auth/login',
+        config.auth.endpoints.login,
         credentials
       );
-      console.log(data);
+
       localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
       localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
       localStorage.setItem('user', JSON.stringify(data.user));
 
       return data.user;
     } catch (error) {
-      console.log(error);
       if (isAxiosError(error)) {
         throw new Error(error.response?.data?.message || 'Login failed');
       }
@@ -84,7 +82,7 @@ export const authService = {
   async register(credentials: RegisterCredentials): Promise<User> {
     try {
       const { data } = await axiosInstance.post<AuthResponse>(
-        '/api/Auth/register',
+        config.auth.endpoints.register,
         credentials
       );
 
@@ -104,7 +102,7 @@ export const authService = {
   // Mock logout
   async logout(): Promise<void> {
     try {
-      await axiosInstance.post('/api/Auth/logout');
+      await axiosInstance.post(config.auth.endpoints.logout);
     } catch (error) {
       console.error('Logout request failed:', error);
     } finally {
@@ -121,9 +119,10 @@ export const authService = {
         throw new Error('No refresh token available');
       }
 
-      const { data } = await axiosInstance.post<AuthResponse>('/api/Auth/refresh', {
-        refreshToken,
-      });
+      const { data } = await axiosInstance.post<AuthResponse>(
+        config.auth.endpoints.refresh,
+        { refreshToken }
+      );
 
       localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
       localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
