@@ -2,6 +2,33 @@
 
 A modern weather application built with React, TypeScript, and Tailwind CSS that provides real-time weather information with a beautiful user interface.
 
+## Screenshots
+
+### Desktop Views
+
+#### Authentication Screens
+| Login | Registration |
+|-------|-------------|
+| ![Login Screen](/public/screenshots/desktop/01-login.png) | ![Registration Screen](/public/screenshots/desktop/02-register.png) |
+
+#### Main Features
+| Home Dashboard |
+|----------------|
+| ![Home Dashboard](/public/screenshots/desktop/03-home.png) |
+*Complete weather dashboard with current conditions, hourly forecast, and weekly forecast*
+
+| Recent Locations | Interactive Map |
+|-----------------|----------------|
+| ![Recent Locations](/public/screenshots/desktop/04-recent.png) | ![Weather Map](/public/screenshots/desktop/05-map.png) |
+*Left: Recent locations with quick access • Right: Interactive weather map with various layers*
+
+### Mobile Views
+
+| Home Dashboard | Recent Locations | Weather Map |
+|---------------|------------------|-------------|
+| ![Mobile Home](/public/screenshots/mobile/01-mobile-home.png) | ![Mobile Recent](/public/screenshots/mobile/02-mobile-recent.png) | ![Mobile Map](/public/screenshots/mobile/03-mobile-map.png) |
+*Responsive design optimized for mobile devices with easy navigation and clear data presentation*
+
 ## Features
 
 - Current weather conditions with detailed information
