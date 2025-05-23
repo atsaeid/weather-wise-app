@@ -1,3 +1,5 @@
+import { isAxiosError } from 'axios';
+import axiosInstance from '../lib/axios';
 import { config } from '../config';
 
 // Weather data interface
@@ -264,89 +266,103 @@ export const weatherService = {
     });
   },
 
-  async getWeatherByCoordinates(latitude: number, longitude: number): Promise<WeatherData> {
-    const response = await fetch(
-      `${config.api.weather.baseUrl}/coordinates?lat=${latitude}&lon=${longitude}`,
-      {
-        headers: getAuthHeader(),
+  async getWeatherByCoordinates(
+    latitude: number,
+    longitude: number
+  ): Promise<WeatherData> {
+    try {
+      const { data } = await axiosInstance.get<WeatherData>('/api/Weather/coordinates', {
+        params: { lat: latitude, lon: longitude },
+      });
+      return data;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 'Failed to fetch weather data'
+        );
       }
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch weather data');
+      throw error;
     }
-
-    return response.json();
   },
 
   async getWeatherData(locationName: string): Promise<WeatherData> {
-    const response = await fetch(
-      `${config.api.weather.baseUrl}/${encodeURIComponent(locationName)}`,
-      {
-        headers: getAuthHeader(),
+    try {
+      const { data } = await axiosInstance.get<WeatherData>(
+        `/api/Weather/${encodeURIComponent(locationName)}`
+      );
+      return data;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 'Failed to fetch weather data'
+        );
       }
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch weather data');
+      throw error;
     }
-
-    return response.json();
   },
 
   async searchLocations(query: string): Promise<LocationSearchResult[]> {
-    const response = await fetch(
-      `${config.api.weather.searchUrl}?query=${encodeURIComponent(query)}`,
-      {
-        headers: getAuthHeader(),
+    try {
+      const { data } = await axiosInstance.get<LocationSearchResult[]>(
+        '/api/Weather/search',
+        {
+          params: { query },
+        }
+      );
+      return data;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 'Location search failed'
+        );
       }
-    );
-
-    if (!response.ok) {
-      throw new Error('Location search failed');
+      throw error;
     }
-
-    return response.json();
   },
 
   async getFavoriteLocations(): Promise<string[]> {
-    const response = await fetch(config.favorites.baseUrl, {
-      headers: getAuthHeader(),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch favorites');
+    try {
+      const { data } = await axiosInstance.get<{ locations: string[] }>(
+        '/api/Favorites'
+      );
+      return data.locations;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 'Failed to fetch favorites'
+        );
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    return data.locations;
   },
 
   async addToFavorites(locationName: string): Promise<void> {
-    const response = await fetch(
-      `${config.favorites.baseUrl}/${encodeURIComponent(locationName)}`,
-      {
-        method: 'POST',
-        headers: getAuthHeader(),
+    try {
+      await axiosInstance.post(
+        `/api/Favorites/${encodeURIComponent(locationName)}`
+      );
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 'Failed to add to favorites'
+        );
       }
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to add to favorites');
+      throw error;
     }
   },
 
   async removeFromFavorites(locationName: string): Promise<void> {
-    const response = await fetch(
-      `${config.favorites.baseUrl}/${encodeURIComponent(locationName)}`,
-      {
-        method: 'DELETE',
-        headers: getAuthHeader(),
+    try {
+      await axiosInstance.delete(
+        `/api/Favorites/${encodeURIComponent(locationName)}`
+      );
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 'Failed to remove from favorites'
+        );
       }
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to remove from favorites');
+      throw error;
     }
   },
 
@@ -357,19 +373,28 @@ export const weatherService = {
     width: number = 800,
     height: number = 600
   ): Promise<string> {
-    const response = await fetch(
-      `${config.api.baseUrl}/api/Map/static?latitude=${lat}&longitude=${lon}&zoom=${zoom}&width=${width}&height=${height}`,
-      {
-        headers: getAuthHeader(),
+    try {
+      const { data } = await axiosInstance.get<{ imageBase64: string }>(
+        '/api/Map/static',
+        {
+          params: {
+            latitude: lat,
+            longitude: lon,
+            zoom,
+            width,
+            height,
+          },
+        }
+      );
+      return data.imageBase64;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 'Failed to fetch map image'
+        );
       }
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch map image');
+      throw error;
     }
-
-    const data = await response.json();
-    return data.imageBase64; // The backend returns base64 encoded image
   },
 };
 

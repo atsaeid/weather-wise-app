@@ -1,3 +1,5 @@
+import axios, { AxiosError, isAxiosError } from 'axios';
+import axiosInstance from '../lib/axios';
 import { config } from '../config';
 
 // Mock user interface
@@ -50,107 +52,86 @@ export const authService = {
 
   // Get current user
   getCurrentUser(): User | null {
-    const userData = localStorage.getItem(config.auth.tokenKey);
+    const userData = localStorage.getItem('user');
     if (!userData) return null;
     return JSON.parse(userData);
   },
 
   // Mock login
   async login(credentials: LoginCredentials): Promise<User> {
-    const response = await fetch(config.auth.endpoints.login, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
+    try {
+      console.log('axiosInstance');
+      const { data } = await axiosInstance.post<AuthResponse>(
+        '/api/Auth/login',
+        credentials
+      );
+      console.log(data);
+      localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
+      localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Login failed');
+      return data.user;
+    } catch (error) {
+      console.log(error);
+      if (isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Login failed');
+      }
+      throw error;
     }
-
-    const data: AuthResponse = await response.json();
-    
-    // Store tokens
-    localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
-    localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    
-    return data.user;
   },
 
   // Mock register
   async register(credentials: RegisterCredentials): Promise<User> {
-    const response = await fetch(config.auth.endpoints.register, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
+    try {
+      const { data } = await axiosInstance.post<AuthResponse>(
+        '/api/Auth/register',
+        credentials
+      );
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Registration failed');
+      localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
+      localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      return data.user;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Registration failed');
+      }
+      throw error;
     }
-
-    const data: AuthResponse = await response.json();
-    
-    // Store tokens
-    localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
-    localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    
-    return data.user;
   },
 
   // Mock logout
   async logout(): Promise<void> {
-    const token = localStorage.getItem(config.auth.tokenKey);
-    
-    if (token) {
-      try {
-        await fetch(config.auth.endpoints.logout, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-      } catch (error) {
-        console.error('Logout request failed:', error);
-      }
+    try {
+      await axiosInstance.post('/api/Auth/logout');
+    } catch (error) {
+      console.error('Logout request failed:', error);
+    } finally {
+      localStorage.removeItem(config.auth.tokenKey);
+      localStorage.removeItem(config.auth.refreshTokenKey);
+      localStorage.removeItem('user');
     }
-    
-    // Clear local storage regardless of API call result
-    localStorage.removeItem(config.auth.tokenKey);
-    localStorage.removeItem(config.auth.refreshTokenKey);
-    localStorage.removeItem('user');
   },
 
   async refreshToken(): Promise<void> {
-    const refreshToken = localStorage.getItem(config.auth.refreshTokenKey);
-    
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
+    try {
+      const refreshToken = localStorage.getItem(config.auth.refreshTokenKey);
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const { data } = await axiosInstance.post<AuthResponse>('/api/Auth/refresh', {
+        refreshToken,
+      });
+
+      localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
+      localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Token refresh failed');
+      }
+      throw error;
     }
-
-    const response = await fetch(config.auth.endpoints.refresh, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Token refresh failed');
-    }
-
-    const data: AuthResponse = await response.json();
-    
-    // Update tokens
-    localStorage.setItem(config.auth.tokenKey, data.tokens.accessToken);
-    localStorage.setItem(config.auth.refreshTokenKey, data.tokens.refreshToken);
   },
 }; 

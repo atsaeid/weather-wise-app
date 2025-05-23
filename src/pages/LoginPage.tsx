@@ -53,6 +53,7 @@ const LoginPage = () => {
       await login(credentials);
       navigate('/', { replace: true });
     } catch (err) {
+      console.log(err);
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setIsLoading(false);
