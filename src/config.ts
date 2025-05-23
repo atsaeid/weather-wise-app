@@ -37,6 +37,11 @@ interface Config {
       lon: number;
     };
   };
+  endpoints: {
+    weather: string;
+    maps: string;
+    auth: string;
+  };
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5083';
@@ -79,6 +84,11 @@ export const config: Config = {
       lat: Number(import.meta.env.VITE_MAP_DEFAULT_CENTER_LAT) || 35.6892,
       lon: Number(import.meta.env.VITE_MAP_DEFAULT_CENTER_LON) || 51.3890,
     },
+  },
+  endpoints: {
+    weather: import.meta.env.VITE_WEATHER_API_URL || 'http://localhost:3000/api/weather',
+    maps: import.meta.env.VITE_MAPS_API_URL || 'http://localhost:3000/api/map',
+    auth: import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3000/api/auth',
   },
 };
 

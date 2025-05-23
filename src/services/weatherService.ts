@@ -2,22 +2,14 @@ import { isAxiosError } from 'axios';
 import axiosInstance from '../lib/axios';
 import { config } from '../config';
 
-// Weather data interface
-export interface WeatherData {
-  location: string;
-  temperature: number;
-  condition: string;
-  feelsLike: number;
-  humidity: number;
-  windSpeed: number;
-  uvIndex: number;
-  pressure: number;
-  timezone: string;
-  localTime: string;
-  hourlyForecasts: HourlyForecast[];
-  dailyForecasts: DailyForecast[];
-  mapLocation: { lat: number; lon: number };
-  isFavorite?: boolean;
+export interface Location {
+  latitude: number;
+  longitude: number;
+}
+
+export interface MapLocation {
+  lat: number;
+  lon: number;
 }
 
 export interface HourlyForecast {
@@ -28,12 +20,26 @@ export interface HourlyForecast {
 }
 
 export interface DailyForecast {
-  day: string;
   date: string;
-  highTemp: number;
-  lowTemp: number;
+  maxTemp: number;
+  minTemp: number;
   condition: string;
   precipitation: number;
+}
+
+export interface WeatherData {
+  location: string;
+  temperature: number;
+  condition: string;
+  feelsLike: number;
+  humidity: number;
+  windSpeed: number;
+  pressure: number;
+  localTime: string;
+  timezone: string;
+  mapLocation: MapLocation;
+  hourlyForecasts: HourlyForecast[];
+  dailyForecasts: DailyForecast[];
 }
 
 export interface LocationSearchResult {
@@ -244,8 +250,8 @@ const getAuthHeader = (): HeadersInit => {
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
 
-export const weatherService = {
-  async getCurrentLocation(): Promise<UserLocation> {
+class WeatherService {
+  private async getCurrentLocationPromise(): Promise<Location> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error('Geolocation is not supported by your browser'));
@@ -260,49 +266,50 @@ export const weatherService = {
           });
         },
         (error) => {
-          reject(new Error('Unable to retrieve your location'));
+          reject(new Error(`Failed to get location: ${error.message}`));
         }
       );
     });
-  },
+  }
 
-  async getWeatherByCoordinates(
-    latitude: number,
-    longitude: number
-  ): Promise<WeatherData> {
+  async getCurrentLocation(): Promise<Location> {
+    return this.getCurrentLocationPromise();
+  }
+
+  async getWeatherData(location: string): Promise<WeatherData> {
     try {
-      const { data } = await axiosInstance.get<WeatherData>(
+      const response = await axiosInstance.get<WeatherData>(
+        `${config.api.weather.baseUrl}/${encodeURIComponent(location)}`
+      );
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || 'Failed to fetch weather data'
+        );
+      }
+      throw error;
+    }
+  }
+
+  async getWeatherByCoordinates(lat: number, lon: number): Promise<WeatherData> {
+    try {
+      const response = await axiosInstance.get<WeatherData>(
         `${config.api.weather.baseUrl}/coordinates`,
         {
-          params: { lat: latitude, lon: longitude },
+          params: { lat, lon },
         }
       );
-      return data;
+      return response.data;
     } catch (error) {
       if (isAxiosError(error)) {
         throw new Error(
-          error.response?.data?.message || 'Failed to fetch weather data'
+          error.response?.data?.message || 'Failed to fetch weather data by coordinates'
         );
       }
       throw error;
     }
-  },
-
-  async getWeatherData(locationName: string): Promise<WeatherData> {
-    try {
-      const { data } = await axiosInstance.get<WeatherData>(
-        `${config.api.weather.baseUrl}/${encodeURIComponent(locationName)}`
-      );
-      return data;
-    } catch (error) {
-      if (isAxiosError(error)) {
-        throw new Error(
-          error.response?.data?.message || 'Failed to fetch weather data'
-        );
-      }
-      throw error;
-    }
-  },
+  }
 
   async searchLocations(query: string): Promise<LocationSearchResult[]> {
     try {
@@ -321,7 +328,7 @@ export const weatherService = {
       }
       throw error;
     }
-  },
+  }
 
   async getFavoriteLocations(): Promise<string[]> {
     try {
@@ -337,7 +344,7 @@ export const weatherService = {
       }
       throw error;
     }
-  },
+  }
 
   async addToFavorites(locationName: string): Promise<void> {
     try {
@@ -352,7 +359,7 @@ export const weatherService = {
       }
       throw error;
     }
-  },
+  }
 
   async removeFromFavorites(locationName: string): Promise<void> {
     try {
@@ -367,7 +374,7 @@ export const weatherService = {
       }
       throw error;
     }
-  },
+  }
 
   async getStaticMapImage(
     lat: number,
@@ -398,7 +405,9 @@ export const weatherService = {
       }
       throw error;
     }
-  },
-};
+  }
+}
+
+export const weatherService = new WeatherService();
 
 export default weatherService; 
